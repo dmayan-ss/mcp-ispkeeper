@@ -16,7 +16,7 @@ function json(data: unknown): string {
 
 export function registerTools(server: McpServer): void {
   // ──────────────────────────────────────────────
-  // CLIENTES
+  // CLIENTS
   // ──────────────────────────────────────────────
 
   server.tool(
@@ -31,7 +31,7 @@ export function registerTools(server: McpServer): void {
       borrado: z.enum(["1", "0"]).optional().describe("Include deleted (1) or not (0, default)"),
       altaDesde: z.string().optional().describe("Created from date (YYYY-MM-DD)"),
       altaHasta: z.string().optional().describe("Created until date (YYYY-MM-DD)"),
-      contribuyente: z.string().optional().describe("Tax type: C=consumidor final, R=responsable inscripto, M=monotributo, E=exento. Comma-separated."),
+      contribuyente: z.string().optional().describe("Tax type: C=final consumer, R=registered taxpayer, M=simplified regime, E=exempt. Comma-separated."),
       relaciones: z.string().optional().describe("Expand relations: cat,subz,locfi,locre,loc,medp,tkcli,email,adic,contel,contv,coninter,intco"),
     },
     async (params) => {
@@ -121,12 +121,12 @@ export function registerTools(server: McpServer): void {
   );
 
   // ──────────────────────────────────────────────
-  // FACTURAS
+  // INVOICES
   // ──────────────────────────────────────────────
 
   server.tool(
     "list_invoices",
-    "List invoices with filters by date, type, point of sale. Types: FA,FB,FX (facturas), CA,CB,CX (crédito), DA,DB,DX (débito).",
+    "List invoices with filters by date, type, point of sale. Types: FA,FB,FX (invoices), CA,CB,CX (credit notes), DA,DB,DX (debit notes).",
     {
       page: z.number().optional().describe("Page number"),
       per_page: z.number().optional().describe("Results per page (default 50)"),
@@ -171,7 +171,7 @@ export function registerTools(server: McpServer): void {
   );
 
   // ──────────────────────────────────────────────
-  // COBRANZAS
+  // COLLECTIONS
   // ──────────────────────────────────────────────
 
   server.tool(
@@ -207,7 +207,7 @@ export function registerTools(server: McpServer): void {
   );
 
   // ──────────────────────────────────────────────
-  // CONEXIONES INTERNET
+  // INTERNET CONNECTIONS
   // ──────────────────────────────────────────────
 
   server.tool(
@@ -263,7 +263,7 @@ export function registerTools(server: McpServer): void {
   );
 
   // ──────────────────────────────────────────────
-  // TV Y TELEFONÍA
+  // TV & PHONE
   // ──────────────────────────────────────────────
 
   server.tool(
@@ -377,7 +377,7 @@ export function registerTools(server: McpServer): void {
   );
 
   // ──────────────────────────────────────────────
-  // RED Y PLANES
+  // NETWORK & PLANS
   // ──────────────────────────────────────────────
 
   server.tool(
@@ -408,7 +408,7 @@ export function registerTools(server: McpServer): void {
   );
 
   // ──────────────────────────────────────────────
-  // INFRAESTRUCTURA FTTx
+  // FTTx INFRASTRUCTURE
   // ──────────────────────────────────────────────
 
   server.tool(
@@ -475,7 +475,7 @@ export function registerTools(server: McpServer): void {
   );
 
   // ──────────────────────────────────────────────
-  // DATOS AUXILIARES
+  // AUXILIARY DATA
   // ──────────────────────────────────────────────
 
   server.tool(

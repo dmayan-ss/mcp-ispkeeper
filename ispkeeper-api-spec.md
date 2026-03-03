@@ -1,438 +1,434 @@
-# ISPkeeper API - Especificación para MCP Server (Read-Only)
+# ISPKeeper API - Specification for MCP Server (Read-Only)
 
 ## Base URL
 ```
 https://api.anatod.ar/api/
 ```
 
-## Autenticación
+## Authentication
 - Header: `x-api-key: <token>`
-- Header adicional requerido: `X-Requested-With: XMLHttpRequest`
+- Additional required header: `X-Requested-With: XMLHttpRequest`
 
-## Patrón General
-- REST JSON, paginado con `page` y `per_page` (default 50)
-- Relaciones expandibles via query param `relaciones` (ej: `relaciones=cli,usu`)
-- Filtros por fecha: `altaDesde`, `altaHasta` (formato date)
-- Búsqueda texto: `q`
-- Respuestas: 200 OK (object), 400/404 error
+## General Pattern
+- REST JSON, paginated with `page` and `per_page` (default 50)
+- Expandable relations via query param `relaciones` (e.g.: `relaciones=cli,usu`)
+- Date filters: `altaDesde`, `altaHasta` (date format)
+- Text search: `q`
+- Responses: 200 OK (object), 400/404 error
 
 ---
 
-## ENDPOINTS READ-ONLY (GET)
+## READ-ONLY ENDPOINTS (GET)
 
-### CLIENTES
+### CLIENTS
 
 #### GET /api/clientes
-Listado de clientes.
+List clients.
 Query params:
-- `relaciones` (string, default: "cat,subz") - Ver referencias
-- `page` (string) - Página
-- `per_page` (string, default: "50") - Registros por página
-- `borrado` (enum: "1"|"0", default: "0") - Filtro borrado
-- `cortado` (enum: "Y"|"N", default: "N") - Filtro cortado
-- `altaDesde` (date) - Fecha alta desde
-- `altaHasta` (date) - Fecha alta hasta
-- `contribuyente` (string, default: "C,R") - Tipo contribuyente (C: consumidor final, R: responsable inscripto, M: monotributo, E: exento)
-- `q` (string) - Búsqueda texto
-- `ident` (string) - DNI/INE/RFC/NIF
+- `relaciones` (string, default: "cat,subz") - See references
+- `page` (string) - Page number
+- `per_page` (string, default: "50") - Records per page
+- `borrado` (enum: "1"|"0", default: "0") - Deleted filter
+- `cortado` (enum: "Y"|"N", default: "N") - Cut-off filter
+- `altaDesde` (date) - Created from date
+- `altaHasta` (date) - Created until date
+- `contribuyente` (string, default: "C,R") - Tax type (C: final consumer, R: registered taxpayer, M: simplified regime, E: exempt)
+- `q` (string) - Text search
+- `ident` (string) - ID document (DNI/INE/RFC/NIF)
 
 #### GET /api/cliente/{cliente_id}
-Obtener un cliente.
+Get a client.
 Path params: `cliente_id` (string, required)
 Query params: `relaciones` (string, default: "cat,subz")
 
-Relaciones disponibles para Clientes:
-- cat: Categoría de cliente
-- intco: Como nos conoció
-- locfi: Localidad fiscal
-- locre: Localidad real
-- loc: Localidad
-- subz: Subzona
-- medp: Medio de pago
-- tkcli: Ticket de cliente
-- email: Emails del cliente
-- adic: Adicionales de facturación
-- contel: Conexiones de telefonía
-- contv: Conexiones de TV
-- coninter: Conexiones de internet
+Available relations for Clients:
+- cat: Client category
+- intco: How did you find us
+- locfi: Tax locality
+- locre: Real locality
+- loc: Locality
+- subz: Subzone
+- medp: Payment method
+- tkcli: Client ticket
+- email: Client emails
+- adic: Billing additionals
+- contel: Phone connections
+- contv: TV connections
+- coninter: Internet connections
 
 #### GET /api/clientes/resumen
-Resumen total/activos de clientes. Sin params adicionales.
+Summary of total/active clients. No additional params.
 
 #### GET /api/cliente/{cliente_id}/facturas
-Facturas de un cliente. Path: `cliente_id` (required)
+Invoices for a client. Path: `cliente_id` (required)
 
-#### GET /api/cliente/{cliente_id}/adicionales (inferido del sidebar)
-Adicionales de un cliente.
+#### GET /api/cliente/{cliente_id}/adicionales
+Additionals for a client.
 
-#### GET /api/cliente/{cliente_id}/cobranzas (inferido del sidebar)
-Cobranzas de un cliente.
+#### GET /api/cliente/{cliente_id}/cobranzas
+Collections for a client.
 
-#### GET /api/cliente/{cliente_id}/conexiones-internet (inferido del sidebar)
-Servicios de internet de un cliente.
+#### GET /api/cliente/{cliente_id}/conexiones-internet
+Internet services for a client.
 
-#### GET /api/cliente/{cliente_id}/conexiones-telefonia (inferido del sidebar)
-Servicios de telefonía de un cliente.
+#### GET /api/cliente/{cliente_id}/conexiones-telefonia
+Phone services for a client.
 
-#### GET /api/cliente/{cliente_id}/conexiones-television (inferido del sidebar)
-Servicios de TV de un cliente.
+#### GET /api/cliente/{cliente_id}/conexiones-television
+TV services for a client.
 
-#### GET /api/cliente/{cliente_id}/tickets (inferido del sidebar)
-Tickets de un cliente.
+#### GET /api/cliente/{cliente_id}/tickets
+Tickets for a client.
 
 #### GET /api/categorias-cliente
-Listado de categorías de cliente.
+List client categories.
 
-#### GET /api/cliente/{cliente_id}/log
-Log de un cliente.
+#### GET /api/cliente-log/{cliente_id}
+Client change log.
 
-#### GET /api/clientes/log
-Listado de log de clientes.
+#### GET /api/clientes-log
+List client change logs.
 
-#### GET /api/cliente/{cliente_id}/compromiso-de-pago (verificar)
-Verificar compromiso de pago de un cliente.
+#### GET /api/cliente/{cliente_id}/compromiso-pago/check
+Check payment commitment for a client.
 
 ---
 
-### COBRANZAS
+### COLLECTIONS
 
 #### GET /api/cobranzas
-Listado de cobranzas.
+List collections.
 Query params:
 - `relaciones` (string, default: "cli,usu")
 - `page`, `per_page`
 - `altaDesde`, `altaHasta` (date)
-- `usuario` (string) - Filtro por usuario
+- `usuario` (string) - Filter by user
 
 #### GET /api/cobranza/{cobranza_id}
-Obtener una cobranza. Path: `cobranza_id` (required)
+Get a collection. Path: `cobranza_id` (required)
 
 #### GET /api/cobranza/{cobranza_id}/consolidado
-Consolidado de cobranza.
+Consolidated collection data.
 Path: `cobranza_id` (required)
 Query: `per_page`, `relaciones`
 
-#### GET /api/link-de-cobranzas
-Link de cobranzas.
-
-Relaciones disponibles para Cobranzas:
-- cli: Cliente
-- usu: Usuario
+Available relations for Collections:
+- cli: Client
+- usu: User
 
 ---
 
-### FACTURAS
+### INVOICES
 
 #### GET /api/facturas
-Listado de facturas.
+List invoices.
 Query params:
 - `relaciones` (string, default: "cli,usu")
 - `page`, `per_page`
 - `altaDesde`, `altaHasta` (date)
-- `tipo` (string, default: "FA,FX") - Tipo factura (CA,CB,CX,DA,DB,DX,FA,FB,FX)
-- `puntoVenta` (string) - Punto de venta
-- `convertir` (enum: "Y"|"N") - Filtro conversión
+- `tipo` (string, default: "FA,FX") - Invoice type (CA,CB,CX,DA,DB,DX,FA,FB,FX)
+- `puntoVenta` (string) - Point of sale
 
 #### GET /api/factura/{factura_id}
-Obtener una factura. Path: `factura_id` (required)
+Get an invoice. Path: `factura_id` (required)
 
 #### GET /api/factura/{factura_id}/items
-Ítems de una factura.
+Invoice items.
 
 #### GET /api/factura/{factura_id}/consolidado
-Consolidado de factura.
+Consolidated invoice data.
 
-#### GET /api/factura/{factura_id}/imprimir
-Link PDF de factura.
+#### GET /api/factura/{factura_id}/print
+Invoice PDF link.
 
-Relaciones disponibles para Facturas:
-- cli: Cliente
-- anurel: Factura anulada asociada
-- clitmp: Cliente temporal
-- facrel: Factura relacionada
+Available relations for Invoices:
+- cli: Client
+- anurel: Related voided invoice
+- clitmp: Temporary client
+- facrel: Related invoice
 - tck: Ticket
-- usu: Usuario
-- desde: Medio de pago desde (solo consolidado)
-- hacia: Medio de pago hacia (solo consolidado)
-- conso: Cobranzas consolidadas
+- usu: User
+- desde: Payment method from (consolidated only)
+- hacia: Payment method to (consolidated only)
+- conso: Consolidated collections
 
 ---
 
-### SERVICIOS DE INTERNET
+### INTERNET SERVICES
 
 #### GET /api/conexiones-internet
-Listado de servicios internet.
+List internet services.
 Query params:
 - `relaciones` (string, default: "cli,suc")
 - `page`, `per_page`
-- `tecnologia` (string) - Tecnología (R, T, O, H, S, P, D)
+- `tecnologia` (string) - Technology (R, T, O, H, S, P, D)
 - `plan` (string) - Plan
 - `altaDesde`, `altaHasta` (date)
 - `cortado` (enum: "Y"|"N")
-- `cliente` (string) - ID del cliente
-- `q` (string) - Búsqueda texto
+- `cliente` (string) - Client ID
+- `q` (string) - Text search
 
 #### GET /api/conexion-internet/{conexion_id}
-Obtener un servicio internet. Path: `conexion_id` (required)
+Get an internet service. Path: `conexion_id` (required)
 
-#### GET /api/conexion-internet/{conexion_id}/log
-Log de servicio internet.
+#### GET /api/conexion-internet-log/{conexion_id}
+Internet service change log.
 
-#### GET /api/conexiones-internet/log
-Listado de logs de servicios internet.
+#### GET /api/conexiones-internet-log
+List internet service change logs.
 
-Relaciones disponibles:
-- cli: Cliente
-- boc: Boca FTTH
-- ip: Dirección IP
-- ippub: Dirección IP pública
-- pre: Precinto FTTH
+Available relations:
+- cli: Client
+- boc: FTTH port
+- ip: IP address
+- ippub: Public IP address
+- pre: FTTH seal
 - rou: Router
 - sto: Stock
-- subz: Subzona
-- suc: Sucursal
-- mac: Dirección MAC
+- subz: Subzone
+- suc: Branch
+- mac: MAC address
 - vlan: VLAN
 - svlan: SVLAN
-- loc: Localidad
+- loc: Locality
 - mik: Mikrotik
-- pl: Plan de la conexión
-- plp: Plan conexión prepago
-- caja: Caja FTTH
-- extra: Extra de la conexión
+- pl: Connection plan
+- plp: Prepaid connection plan
+- caja: FTTH box
+- extra: Connection extra
 
 ---
 
-### INFRAESTRUCTURA FTTX
+### FTTx INFRASTRUCTURE
 
 #### GET /api/backbones
-FTTx Backbone - Listado
+FTTx Backbone - List
 
 #### GET /api/backbone/{id}/pons
-FTTx Backbone - Listado de PONs
+FTTx Backbone - List PONs
 
 #### GET /api/pons
-FTTx PON - Listado
+FTTx PON - List
 
 #### GET /api/pon/{id}/cajas
-FTTx PON - Listado de Cajas NAPs
+FTTx PON - List NAP Boxes
 
 #### GET /api/pon/{id}/backbone
-FTTx PON - Obtener Backbone
+FTTx PON - Get Backbone
 
 #### GET /api/cajas
-FTTx Caja NAP - Listado
+FTTx NAP Box - List
 
 #### GET /api/caja/{id}/puertos
-FTTx Caja NAP - Listado de Puertos
+FTTx NAP Box - List Ports
 
 #### GET /api/caja/{id}/pon-backbone
-FTTx Caja NAP - Obtener PON y Backbone
+FTTx NAP Box - Get PON and Backbone
 
 #### GET /api/puertos
-FTTx Puerto - Listado
+FTTx Port - List
 
 #### GET /api/puerto/{id}/caja-pon-backbone
-FTTx Puerto - Obtener Caja NAP, PON y Backbone
+FTTx Port - Get NAP Box, PON, and Backbone
 
 #### GET /api/precintos
-Precintos (Security Seal) - Listado
+Seals - List
 
 ---
 
-### PLANES Y RED
+### PLANS & NETWORK
 
 #### GET /api/planes
-Plan Internet - Listado.
+Internet Plans - List.
 Query params:
 - `borrado` (enum: "Y"|"N")
 - `discontinuo` (enum: "Y"|"N")
-- `q` (string) - Búsqueda texto
+- `q` (string) - Text search
 
 #### GET /api/nodos
-Nodos - Listado
+Nodes - List
 
 #### GET /api/nodo/{id}
-Obtener nodo
+Get node
 
 #### GET /api/subnodos
-Subnodo - Listado
+Subnodes - List
 
 #### GET /api/subnodo/{id}
-Obtener subnodo
+Get subnode
 
 #### GET /api/vlans
-VLAN - Listado
+VLANs - List
 
 #### GET /api/vlan/{id}
-Obtener VLAN
+Get VLAN
 
 #### GET /api/svlans
-SVLAN - Listado
+SVLANs - List
 
 #### GET /api/svlan/{id}
-Obtener SVLAN
+Get SVLAN
 
 #### GET /api/estado-red
-Estado de Red - Listado.
+Network Status - List.
 Query params:
-- `fechaDesdeCaida` (string) - Fecha desde caída
-- `fechaHastaCaida` (string) - Fecha hasta caída
+- `fechaDesdeCaida` (string) - Outage from date
+- `fechaHastaCaida` (string) - Outage until date
 
-#### GET /api/categorias-extra-conexion
-Categorías extra de conexión - Listado
+#### GET /api/conexiones/categoria-extra
+Extra connection categories - List
 
 ---
 
-### SERVICIO DE TV
+### TV SERVICES
 
 #### GET /api/conexion-television/{id}
-Obtener servicio TV
+Get TV service
 
 #### GET /api/conexiones-television
-Listado servicios TV
+List TV services
 
 ---
 
-### SERVICIO DE TELEFONÍA
+### PHONE SERVICES
 
 #### GET /api/conexion-telefonia/{id}
-Obtener servicio telefonía
+Get phone service
 
 #### GET /api/conexiones-telefonia
-Listado servicios telefonía
+List phone services
 
 ---
 
 ### TICKETS
 
 #### GET /api/tickets
-Listado de tickets.
+List tickets.
 Query params:
 - `relaciones` (string, default: "usu,cat")
 - `page`, `per_page`
 - `altaDesde`, `altaHasta` (date)
-- `categoria` (string) - Categoría
-- `estado` (string) - Estado
+- `categoria` (string) - Category
+- `estado` (string) - Status
 
 #### GET /api/ticket/{ticket_id}
-Obtener un ticket
+Get a ticket
 
-#### GET /api/ticket/{ticket_id}/log
-Log de ticket
+#### GET /api/ticket-log/{ticket_id}
+Ticket movement log
 
-#### GET /api/tickets/log
-Listado de logs de tickets
+#### GET /api/tickets-log
+List ticket logs
 
 #### GET /api/ticket/{ticket_id}/fotos
-Fotos de un ticket
+Ticket photos
 
-#### GET /api/ticket/{ticket_id}/checkin-checkout
-Checkin/checkout de un ticket
+#### GET /api/ticket/{ticket_id}/checkin
+Ticket checkin/checkout
 
-#### GET /api/subcategoria-ticket/{id}
-Obtener subcategoría ticket
+#### GET /api/ticket-categorias
+List ticket categories
 
-#### GET /api/subcategorias-ticket
-Listado subcategorías ticket
+#### GET /api/ticket-categoria/{id}
+Get ticket category
 
-#### GET /api/categoria-ticket/{id}
-Obtener categoría ticket
+#### GET /api/ticket-subcategorias
+List ticket subcategories
 
-#### GET /api/categorias-ticket
-Listado categorías ticket
+#### GET /api/ticket-subcategoria/{id}
+Get ticket subcategory
 
-#### GET /api/estado-ticket/{id}
-Obtener estado ticket
+#### GET /api/ticket-estados
+List ticket statuses
 
-#### GET /api/estados-ticket
-Listado estados ticket
+#### GET /api/ticket-estado/{id}
+Get ticket status
 
-#### GET /api/como-nos-conocio
-Como nos conoció - Listado
+#### GET /api/cliente-tickets/como-conocio
+How did you find us - List
 
-#### GET /api/proveedores-anteriores
-Proveedores anteriores - Listado
+#### GET /api/cliente-tickets/proveedor-anterior
+Previous providers - List
 
-#### GET /api/categorias-bajas-de-servicio
-Categorías bajas de servicio - Listado
+#### GET /api/cliente-tickets/categorias-bajas
+Service cancellation categories - List
 
 #### GET /api/ticket/{ticket_id}/chat-adjuntos
-Ticket Chat adjuntos
+Ticket chat attachments
 
 ---
 
-### ADICIONALES
+### ADDITIONALS
 
 #### GET /api/adicionales
-Listado de adicionales
+List additionals
 
 #### GET /api/adicional/{id}
-Obtener adicional
+Get additional
 
 ---
 
-### STOCK
+### STOCK / WAREHOUSES
 
 #### GET /api/deposito/{id}
-Obtener depósito
+Get warehouse
 
 #### GET /api/depositos
-Listado depósitos
+List warehouses
 
 ---
 
-### LOCALIDADES
+### LOCALITIES
 
 #### GET /api/localidades
-Listado de localidades
+List localities
 
 ---
 
-### USUARIOS
+### USERS
 
 #### GET /api/usuario/{id}
-Obtener usuario
+Get user
 
 #### GET /api/usuarios
-Listado de usuarios
+List users
 
 ---
 
-### SUCURSALES
+### BRANCHES
 
 #### GET /api/sucursal/{id}
-Obtener sucursal
+Get branch
 
 #### GET /api/sucursales
-Listado de sucursales
+List branches
 
 ---
 
-### MEDIOS DE PAGO
+### PAYMENT METHODS
 
 #### GET /api/medio-pago/{id}
-Obtener medio de pago
+Get payment method
 
-#### GET /api/medios-de-pago
-Listado medios de pago
+#### GET /api/medios-pagos
+List payment methods
 
 ---
 
-## NOTAS PARA EL MCP SERVER
+## NOTES FOR MCP SERVER
 
-1. **Solo implementar operaciones GET** (read-only)
-2. Las URLs exactas de los path pueden variar ligeramente del patrón inferido - verificar contra la API real
-3. Todos los endpoints requieren los headers `x-api-key` y `X-Requested-With: XMLHttpRequest`
-4. La paginación es consistente: `page` + `per_page`
-5. El param `relaciones` permite expandir datos relacionados en cada respuesta
-6. Los endpoints más útiles para consulta operativa:
-   - `/api/clientes` + `/api/cliente/{id}` - Base de clientes
-   - `/api/clientes/resumen` - Dashboard rápido
-   - `/api/facturas` - Facturación
-   - `/api/cobranzas` - Cobros
-   - `/api/conexiones-internet` - Servicios activos
-   - `/api/tickets` - Soporte técnico
-   - `/api/estado-red` - Estado de red
-   - `/api/planes` - Planes disponibles
-   - Infraestructura FTTx (backbones, PONs, cajas, puertos)
+1. **Only implement GET operations** (read-only)
+2. Exact URL paths may vary slightly from inferred patterns - verify against the real API
+3. All endpoints require `x-api-key` and `X-Requested-With: XMLHttpRequest` headers
+4. Pagination is consistent: `page` + `per_page`
+5. The `relaciones` param expands related data in each response
+6. Most useful endpoints for operational queries:
+   - `/api/clientes` + `/api/cliente/{id}` - Client base
+   - `/api/clientes/resumen` - Quick dashboard
+   - `/api/facturas` - Billing
+   - `/api/cobranzas` - Collections
+   - `/api/conexiones-internet` - Active services
+   - `/api/tickets` - Technical support
+   - `/api/estado-red` - Network status
+   - `/api/planes` - Available plans
+   - FTTx infrastructure (backbones, PONs, boxes, ports)

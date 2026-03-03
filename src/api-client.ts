@@ -55,7 +55,7 @@ export class ISPKeeperClient {
     return response.json();
   }
 
-  // ─── Clientes (ALL OK) ───────────────────────────────────
+  // ─── Clients ────────────────────────────────────────────
 
   async listClients(params?: {
     relaciones?: string;
@@ -93,7 +93,7 @@ export class ISPKeeperClient {
     return this.get("/clientes/resumen");
   }
 
-  // ─── Servicios por Cliente (only confirmed 200) ──────────
+  // ─── Client Services ────────────────────────────────────
 
   async getClientInvoices(clienteId: string) {
     return this.get(`/cliente/${clienteId}/facturas`);
@@ -143,7 +143,7 @@ export class ISPKeeperClient {
     return this.get("/categorias-cliente");
   }
 
-  // ─── Facturas ──────────────────────────────────────────
+  // ─── Invoices ──────────────────────────────────────────
 
   async listInvoices(params?: {
     relaciones?: string;
@@ -181,7 +181,7 @@ export class ISPKeeperClient {
     return this.get(`/factura/${facturaId}/print`);
   }
 
-  // ─── Cobranzas (ALL OK) ──────────────────────────────────
+  // ─── Collections ────────────────────────────────────────
 
   async listCollections(params?: {
     relaciones?: string;
@@ -215,7 +215,7 @@ export class ISPKeeperClient {
     });
   }
 
-  // ─── Conexiones Internet ────────────────────────────────
+  // ─── Internet Connections ───────────────────────────────
 
   async listInternetConnections(params?: {
     relaciones?: string;
@@ -271,7 +271,7 @@ export class ISPKeeperClient {
     });
   }
 
-  // ─── TV ──────────────────────────────────────────────────
+  // ─── TV Services ────────────────────────────────────────
 
   async listTVConnections() {
     return this.get("/conexiones-television");
@@ -281,7 +281,7 @@ export class ISPKeeperClient {
     return this.get(`/conexion-television/${id}`);
   }
 
-  // ─── Telefonía ───────────────────────────────────────────
+  // ─── Phone Services ─────────────────────────────────────
 
   async listPhoneConnections() {
     return this.get("/conexiones-telefonia");
@@ -291,7 +291,7 @@ export class ISPKeeperClient {
     return this.get(`/conexion-telefonia/${id}`);
   }
 
-  // ─── Tickets ────────────────────────────────────────────
+  // ─── Tickets ───────────────────────────────────────────
 
   async listTickets(params?: {
     relaciones?: string;
@@ -343,7 +343,7 @@ export class ISPKeeperClient {
     return this.get(`/ticket/${ticketId}/chat-adjuntos`);
   }
 
-  // ─── Ticket Metadata ────────────────────────────────────
+  // ─── Ticket Metadata ───────────────────────────────────
 
   async listTicketCategories() {
     return this.get("/ticket-categorias");
@@ -369,7 +369,7 @@ export class ISPKeeperClient {
     return this.get(`/ticket-estado/${id}`);
   }
 
-  // ─── Planes ───────────────────────────────────────────
+  // ─── Plans ────────────────────────────────────────────
 
   async listPlans(params?: {
     borrado?: "Y" | "N";
@@ -383,7 +383,7 @@ export class ISPKeeperClient {
     });
   }
 
-  // ─── Red (OK) ────────────────────────────────────────────
+  // ─── Network ───────────────────────────────────────────
 
   async getNetworkStatus(params?: {
     fechaDesdeCaida?: string;
@@ -427,7 +427,7 @@ export class ISPKeeperClient {
     return this.get(`/svlan/${id}`);
   }
 
-  // ─── FTTx ──────────────────────────────────────────────
+  // ─── FTTx Infrastructure ────────────────────────────────
 
   async listBackbones() {
     return this.get("/backbones");
@@ -473,7 +473,7 @@ export class ISPKeeperClient {
     return this.get("/precintos");
   }
 
-  // ─── Adicionales (OK) ────────────────────────────────────
+  // ─── Additionals ───────────────────────────────────────
 
   async listAdditionals() {
     return this.get("/adicionales");
@@ -483,7 +483,7 @@ export class ISPKeeperClient {
     return this.get(`/adicional/${id}`);
   }
 
-  // ─── Stock (OK) ──────────────────────────────────────────
+  // ─── Warehouses ────────────────────────────────────────
 
   async listWarehouses() {
     return this.get("/depositos");
@@ -493,7 +493,7 @@ export class ISPKeeperClient {
     return this.get(`/deposito/${id}`);
   }
 
-  // ─── Auxiliares (only confirmed 200) ─────────────────────
+  // ─── Auxiliary Data ─────────────────────────────────────
 
   async listLocalities() {
     return this.get("/localidades");
@@ -515,7 +515,7 @@ export class ISPKeeperClient {
     return this.get(`/sucursal/${id}`);
   }
 
-  // ─── Medios de Pago ─────────────────────────────────────
+  // ─── Payment Methods ────────────────────────────────────
 
   async listPaymentMethods() {
     return this.get("/medios-pagos");
@@ -525,7 +525,7 @@ export class ISPKeeperClient {
     return this.get(`/medio-pago/${id}`);
   }
 
-  // ─── Datos de Referencia ───────────────────────────────
+  // ─── Reference Data ────────────────────────────────────
 
   async listHowDidYouFindUs() {
     return this.get("/cliente-tickets/como-conocio");
