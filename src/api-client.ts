@@ -2,8 +2,7 @@
  * HTTP client for ISPKeeper API.
  * All requests are read-only (GET).
  *
- * Validated against live API on 2026-02-27 (ispkeeper_eval.json).
- * Endpoints marked 404 in eval have been removed.
+ * Paths verified against official docs at anatod.readme.io (2026-03-03).
  */
 
 const API_KEY = process.env.ISPKEEPER_API_KEY ?? "";
@@ -112,15 +111,39 @@ export class ISPKeeperClient {
     return this.get(`/cliente/${clienteId}/adicionales`);
   }
 
-  // REMOVED (404): getClientInternetConnections, getClientTVConnections,
-  //   getClientPhoneConnections, getClientLog, getClientPaymentCommitment
-  // Use getClient() with relaciones=coninter,contv,contel instead.
+  async getClientLog(clienteId: string, params?: {
+    page?: number;
+    per_page?: number;
+  }) {
+    return this.get(`/cliente-log/${clienteId}`, {
+      page: params?.page,
+      per_page: params?.per_page ?? 50,
+    });
+  }
+
+  async listClientsLog(params?: {
+    page?: number;
+    per_page?: number;
+    logDesde?: string;
+    logHasta?: string;
+  }) {
+    return this.get("/clientes-log", {
+      page: params?.page,
+      per_page: params?.per_page ?? 50,
+      logDesde: params?.logDesde,
+      logHasta: params?.logHasta,
+    });
+  }
+
+  async checkPaymentCommitment(clienteId: string) {
+    return this.get(`/cliente/${clienteId}/compromiso-pago/check`);
+  }
 
   async listClientCategories() {
     return this.get("/categorias-cliente");
   }
 
-  // ─── Facturas (OK except imprimir) ───────────────────────
+  // ─── Facturas ──────────────────────────────────────────
 
   async listInvoices(params?: {
     relaciones?: string;
@@ -154,7 +177,9 @@ export class ISPKeeperClient {
     return this.get(`/factura/${facturaId}/consolidado`);
   }
 
-  // REMOVED (404): getInvoicePrintLink
+  async getInvoicePrintLink(facturaId: string) {
+    return this.get(`/factura/${facturaId}/print`);
+  }
 
   // ─── Cobranzas (ALL OK) ──────────────────────────────────
 
@@ -190,7 +215,7 @@ export class ISPKeeperClient {
     });
   }
 
-  // ─── Conexiones Internet (OK except log) ─────────────────
+  // ─── Conexiones Internet ────────────────────────────────
 
   async listInternetConnections(params?: {
     relaciones?: string;
@@ -222,7 +247,29 @@ export class ISPKeeperClient {
     return this.get(`/conexion-internet/${conexionId}`);
   }
 
-  // REMOVED (404): getInternetConnectionLog
+  async getInternetConnectionLog(conexionId: string, params?: {
+    page?: number;
+    per_page?: number;
+  }) {
+    return this.get(`/conexion-internet-log/${conexionId}`, {
+      page: params?.page,
+      per_page: params?.per_page ?? 50,
+    });
+  }
+
+  async listInternetConnectionsLog(params?: {
+    page?: number;
+    per_page?: number;
+    logDesde?: string;
+    logHasta?: string;
+  }) {
+    return this.get("/conexiones-internet-log", {
+      page: params?.page,
+      per_page: params?.per_page ?? 50,
+      logDesde: params?.logDesde,
+      logHasta: params?.logHasta,
+    });
+  }
 
   // ─── TV ──────────────────────────────────────────────────
 
@@ -244,7 +291,7 @@ export class ISPKeeperClient {
     return this.get(`/conexion-telefonia/${id}`);
   }
 
-  // ─── Tickets (OK: list, detail, photos; 404: log, checkin, chat) ──
+  // ─── Tickets ────────────────────────────────────────────
 
   async listTickets(params?: {
     relaciones?: string;
@@ -296,7 +343,33 @@ export class ISPKeeperClient {
     return this.get(`/ticket/${ticketId}/chat-adjuntos`);
   }
 
-  // ─── Planes (ALL OK) ─────────────────────────────────────
+  // ─── Ticket Metadata ────────────────────────────────────
+
+  async listTicketCategories() {
+    return this.get("/ticket-categorias");
+  }
+
+  async getTicketCategory(id: string) {
+    return this.get(`/ticket-categoria/${id}`);
+  }
+
+  async listTicketSubcategories() {
+    return this.get("/ticket-subcategorias");
+  }
+
+  async getTicketSubcategory(id: string) {
+    return this.get(`/ticket-subcategoria/${id}`);
+  }
+
+  async listTicketStatuses() {
+    return this.get("/ticket-estados");
+  }
+
+  async getTicketStatus(id: string) {
+    return this.get(`/ticket-estado/${id}`);
+  }
+
+  // ─── Planes ───────────────────────────────────────────
 
   async listPlans(params?: {
     borrado?: "Y" | "N";
@@ -326,6 +399,10 @@ export class ISPKeeperClient {
     return this.get("/nodos");
   }
 
+  async getNode(id: string) {
+    return this.get(`/nodo/${id}`);
+  }
+
   async listSubnodes() {
     return this.get("/subnodos");
   }
@@ -350,7 +427,7 @@ export class ISPKeeperClient {
     return this.get(`/svlan/${id}`);
   }
 
-  // ─── FTTx (eval tested wrong paths /api/fttx/... - keeping /api/backbones etc.) ──
+  // ─── FTTx ──────────────────────────────────────────────
 
   async listBackbones() {
     return this.get("/backbones");
@@ -438,13 +515,31 @@ export class ISPKeeperClient {
     return this.get(`/sucursal/${id}`);
   }
 
-  async listClientCategories2() {
-    return this.get("/categorias-cliente");
+  // ─── Medios de Pago ─────────────────────────────────────
+
+  async listPaymentMethods() {
+    return this.get("/medios-pagos");
   }
 
-  // REMOVED (404): listPaymentMethods, getPaymentMethod, listTicketCategories,
-  //   getTicketCategory, listTicketSubcategories, getTicketSubcategory,
-  //   listTicketStatuses, getTicketStatus, listHowDidYouFindUs,
-  //   listPreviousProviders, listServiceCancellationCategories,
-  //   listExtraConnectionCategories
+  async getPaymentMethod(id: string) {
+    return this.get(`/medio-pago/${id}`);
+  }
+
+  // ─── Datos de Referencia ───────────────────────────────
+
+  async listHowDidYouFindUs() {
+    return this.get("/cliente-tickets/como-conocio");
+  }
+
+  async listPreviousProviders() {
+    return this.get("/cliente-tickets/proveedor-anterior");
+  }
+
+  async listServiceCancellationCategories() {
+    return this.get("/cliente-tickets/categorias-bajas");
+  }
+
+  async listExtraConnectionCategories(borrado?: "Y" | "N") {
+    return this.get("/conexiones/categoria-extra", { borrado });
+  }
 }
