@@ -1,0 +1,42 @@
+{
+  "manifest_version": "0.3",
+  "name": "mcp-ispkeeper",
+  "version": "0.1.0",
+  "description": "Read-only MCP server for ISPKeeper. Query clients, invoices, collections, internet connections, tickets, network status, FTTx infrastructure, and more.",
+  "author": {
+    "name": "Diego Mayán",
+    "email": "diego.mayan@ssservicios.com.ar"
+  },
+  "display_name": "ISPKeeper",
+  "user_config": {
+    "api_key": {
+      "type": "string",
+      "title": "API Key",
+      "description": "ISPKeeper API key for authentication (x-api-key header)",
+      "sensitive": true,
+      "required": true
+    },
+    "base_url": {
+      "type": "string",
+      "title": "Base URL",
+      "description": "Base URL of your ISPKeeper instance (e.g., https://api.anatod.ar)",
+      "required": true,
+      "default": "https://api.anatod.ar"
+    }
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/dist/index.js"
+      ],
+      "env": {
+        "ISPKEEPER_API_KEY": "${user_config.api_key}",
+        "ISPKEEPER_BASE_URL": "${user_config.base_url}"
+      }
+    }
+  },
+  "license": "MIT"
+}
