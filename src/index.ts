@@ -9,7 +9,7 @@ import { registerTools } from "./tools.js";
 
 const server = new McpServer({
   name: "ispkeeper",
-  version: "0.1.0",
+  version: "0.2.0",
 });
 
 registerTools(server);

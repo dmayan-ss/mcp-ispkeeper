@@ -1,7 +1,7 @@
 {
   "manifest_version": "0.3",
   "name": "mcp-ispkeeper",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Read-only MCP server for ISPKeeper. Query clients, invoices, collections, internet connections, tickets, network status, FTTx infrastructure, and more.",
   "author": {
     "name": "Diego Mayán",
