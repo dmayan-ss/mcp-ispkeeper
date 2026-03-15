@@ -273,8 +273,26 @@ export class ISPKeeperClient {
 
   // ─── TV Services ────────────────────────────────────────
 
-  async listTVConnections() {
-    return this.get("/conexiones-television");
+  async listTVConnections(params?: {
+    relaciones?: string;
+    page?: number;
+    per_page?: number;
+    altaDesde?: string;
+    altaHasta?: string;
+    eliminada?: "Y" | "N";
+    habilitada?: "Y" | "N";
+    cliente?: string;
+  }) {
+    return this.get("/conexiones-television", {
+      relaciones: params?.relaciones ?? "cli,pl",
+      page: params?.page,
+      per_page: params?.per_page ?? 50,
+      altaDesde: params?.altaDesde,
+      altaHasta: params?.altaHasta,
+      eliminada: params?.eliminada,
+      habilitada: params?.habilitada,
+      cliente: params?.cliente,
+    });
   }
 
   async getTVConnection(id: string) {
@@ -283,8 +301,26 @@ export class ISPKeeperClient {
 
   // ─── Phone Services ─────────────────────────────────────
 
-  async listPhoneConnections() {
-    return this.get("/conexiones-telefonia");
+  async listPhoneConnections(params?: {
+    relaciones?: string;
+    page?: number;
+    per_page?: number;
+    altaDesde?: string;
+    altaHasta?: string;
+    eliminada?: "Y" | "N";
+    cortada?: "Y" | "N";
+    cliente?: string;
+  }) {
+    return this.get("/conexiones-telefonia", {
+      relaciones: params?.relaciones ?? "cli,pl",
+      page: params?.page,
+      per_page: params?.per_page ?? 50,
+      altaDesde: params?.altaDesde,
+      altaHasta: params?.altaHasta,
+      eliminada: params?.eliminada,
+      cortada: params?.cortada,
+      cliente: params?.cliente,
+    });
   }
 
   async getPhoneConnection(id: string) {

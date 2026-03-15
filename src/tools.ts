@@ -268,10 +268,19 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "list_tv_connections",
-    "List all TV service connections.",
-    {},
-    async () => {
-      const data = await client.listTVConnections();
+    "List TV service connections with filters by client, date, and status.",
+    {
+      page: z.number().optional().describe("Page number"),
+      per_page: z.number().optional().describe("Results per page (default 50)"),
+      cliente: z.string().optional().describe("Filter by client ID"),
+      altaDesde: z.string().optional().describe("Created from date (YYYY-MM-DD)"),
+      altaHasta: z.string().optional().describe("Created until date (YYYY-MM-DD)"),
+      eliminada: z.enum(["Y", "N"]).optional().describe("Filter deleted connections"),
+      habilitada: z.enum(["Y", "N"]).optional().describe("Filter enabled connections"),
+      relaciones: z.string().optional().describe("Expand relations: cli,pl"),
+    },
+    async (params) => {
+      const data = await client.listTVConnections(params);
       return { content: [{ type: "text", text: json(data) }] };
     }
   );
@@ -290,17 +299,26 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "list_phone_connections",
-    "List all phone/telephony service connections.",
-    {},
-    async () => {
-      const data = await client.listPhoneConnections();
+    "List phone/telephony service connections (includes SSMovil mobile). Filter by client, date, cut-off status. Plans with telefonia_plan_movil=Y are mobile/SSMovil.",
+    {
+      page: z.number().optional().describe("Page number"),
+      per_page: z.number().optional().describe("Results per page (default 50)"),
+      cliente: z.string().optional().describe("Filter by client ID"),
+      altaDesde: z.string().optional().describe("Created from date (YYYY-MM-DD)"),
+      altaHasta: z.string().optional().describe("Created until date (YYYY-MM-DD)"),
+      eliminada: z.enum(["Y", "N"]).optional().describe("Filter deleted connections"),
+      cortada: z.enum(["Y", "N"]).optional().describe("Filter cut-off connections"),
+      relaciones: z.string().optional().describe("Expand relations: cli,pl,coni,ic"),
+    },
+    async (params) => {
+      const data = await client.listPhoneConnections(params);
       return { content: [{ type: "text", text: json(data) }] };
     }
   );
 
   server.tool(
     "get_phone_connection",
-    "Get detailed information about a specific phone/telephony connection.",
+    "Get detailed information about a specific phone/telephony connection (includes SSMovil mobile).",
     {
       connection_id: z.string().describe("Phone connection ID"),
     },

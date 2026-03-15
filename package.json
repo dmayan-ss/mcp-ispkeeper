@@ -1,6 +1,6 @@
 {
   "name": "mcp-ispkeeper",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Read-only MCP server for ISPKeeper ISP management software",
   "type": "module",
   "main": "dist/index.js",
