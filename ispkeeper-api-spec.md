@@ -55,6 +55,7 @@ Available relations for Clients:
 - contel: Phone connections
 - contv: TV connections
 - coninter: Internet connections
+- conmovil: Mobile connections (SSMovil)
 
 #### GET /api/clientes/resumen
 Summary of total/active clients. No additional params.
@@ -76,6 +77,9 @@ Phone services for a client.
 
 #### GET /api/cliente/{cliente_id}/conexiones-television
 TV services for a client.
+
+#### GET /api/cliente/{cliente_id}/conexiones-movil
+SSMovil mobile services for a client.
 
 #### GET /api/cliente/{cliente_id}/tickets
 Tickets for a client.
@@ -297,6 +301,26 @@ Get phone service
 
 #### GET /api/conexiones-telefonia
 List phone services
+
+---
+
+### MOBILE SERVICES (SSMovil)
+
+#### GET /api/conexiones-movil
+List SSMovil mobile services.
+Query params:
+- `relaciones` (string, default: "cli,suc")
+- `page`, `per_page`
+- `cliente` (string) - Filter by client ID
+- `cortado` (enum: "Y"|"N") - Cut-off filter
+- `altaDesde`, `altaHasta` (date)
+- `q` (string) - Text search
+
+#### GET /api/conexion-movil/{id}
+Get SSMovil mobile service. Path: `id` (required)
+
+#### GET /api/cliente/{cliente_id}/conexiones-movil
+(See CLIENTS section) SSMovil mobile services for a client.
 
 ---
 

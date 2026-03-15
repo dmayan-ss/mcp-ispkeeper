@@ -291,6 +291,38 @@ export class ISPKeeperClient {
     return this.get(`/conexion-telefonia/${id}`);
   }
 
+  // ─── Mobile Services (SSMovil) ──────────────────────────
+
+  async listMobileConnections(params?: {
+    relaciones?: string;
+    page?: number;
+    per_page?: number;
+    cliente?: string;
+    cortado?: "Y" | "N";
+    altaDesde?: string;
+    altaHasta?: string;
+    q?: string;
+  }) {
+    return this.get("/conexiones-movil", {
+      relaciones: params?.relaciones ?? "cli,suc",
+      page: params?.page,
+      per_page: params?.per_page ?? 50,
+      cliente: params?.cliente,
+      cortado: params?.cortado,
+      altaDesde: params?.altaDesde,
+      altaHasta: params?.altaHasta,
+      q: params?.q,
+    });
+  }
+
+  async getMobileConnection(id: string) {
+    return this.get(`/conexion-movil/${id}`);
+  }
+
+  async getClientMobileConnections(clienteId: string) {
+    return this.get(`/cliente/${clienteId}/conexiones-movil`);
+  }
+
   // ─── Tickets ───────────────────────────────────────────
 
   async listTickets(params?: {

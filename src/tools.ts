@@ -32,7 +32,7 @@ export function registerTools(server: McpServer): void {
       altaDesde: z.string().optional().describe("Created from date (YYYY-MM-DD)"),
       altaHasta: z.string().optional().describe("Created until date (YYYY-MM-DD)"),
       contribuyente: z.string().optional().describe("Tax type: C=final consumer, R=registered taxpayer, M=simplified regime, E=exempt. Comma-separated."),
-      relaciones: z.string().optional().describe("Expand relations: cat,subz,locfi,locre,loc,medp,tkcli,email,adic,contel,contv,coninter,intco"),
+      relaciones: z.string().optional().describe("Expand relations: cat,subz,locfi,locre,loc,medp,tkcli,email,adic,contel,contv,coninter,conmovil,intco"),
     },
     async (params) => {
       const data = await client.listClients(params);
@@ -42,12 +42,12 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_client",
-    "Get detailed information about a specific client. Use include to get change log or payment commitment. Use relaciones to expand connections (coninter,contv,contel for internet/TV/phone).",
+    "Get detailed information about a specific client. Use include to get change log or payment commitment. Use relaciones to expand connections (coninter,contv,contel,conmovil for internet/TV/phone/mobile).",
     {
       client_id: z.string().describe("Client ID"),
       include: z.enum(["detail", "log", "payment_commitment"]).optional()
         .describe("What to retrieve: detail (default), log (change history), or payment_commitment (check active commitment)"),
-      relaciones: z.string().optional().describe("Expand relations (only for detail): cat,subz,locfi,locre,loc,medp,tkcli,email,adic,contel,contv,coninter,intco"),
+      relaciones: z.string().optional().describe("Expand relations (only for detail): cat,subz,locfi,locre,loc,medp,tkcli,email,adic,contel,contv,coninter,conmovil,intco"),
     },
     async ({ client_id, include, relaciones }) => {
       let data: unknown;
@@ -78,11 +78,11 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_client_services",
-    "Get services for a specific client: invoices, collections, tickets, or additionals. For internet/TV/phone connections, use get_client with relaciones=coninter,contv,contel instead.",
+    "Get services for a specific client: invoices, collections, tickets, additionals, or mobile connections (SSMovil). For internet/TV/phone connections, use get_client with relaciones=coninter,contv,contel instead.",
     {
       client_id: z.string().describe("Client ID"),
       service: z.enum([
-        "invoices", "collections", "tickets", "additionals",
+        "invoices", "collections", "tickets", "additionals", "mobile_connections",
       ]).describe("Type of service/data to retrieve"),
     },
     async ({ client_id, service }) => {
@@ -99,6 +99,9 @@ export function registerTools(server: McpServer): void {
           break;
         case "additionals":
           data = await client.getClientAdditionals(client_id);
+          break;
+        case "mobile_connections":
+          data = await client.getClientMobileConnections(client_id);
           break;
       }
       return { content: [{ type: "text", text: json(data) }] };
@@ -306,6 +309,41 @@ export function registerTools(server: McpServer): void {
     },
     async ({ connection_id }) => {
       const data = await client.getPhoneConnection(connection_id);
+      return { content: [{ type: "text", text: json(data) }] };
+    }
+  );
+
+  // ──────────────────────────────────────────────
+  // MOBILE CONNECTIONS (SSMovil)
+  // ──────────────────────────────────────────────
+
+  server.tool(
+    "list_mobile_connections",
+    "List SSMovil mobile service connections with optional filters by client, date, and cut-off status.",
+    {
+      q: z.string().optional().describe("Text search"),
+      page: z.number().optional().describe("Page number"),
+      per_page: z.number().optional().describe("Results per page (default 50)"),
+      cliente: z.string().optional().describe("Filter by client ID"),
+      cortado: z.enum(["Y", "N"]).optional().describe("Filter cut-off connections"),
+      altaDesde: z.string().optional().describe("Created from date (YYYY-MM-DD)"),
+      altaHasta: z.string().optional().describe("Created until date (YYYY-MM-DD)"),
+      relaciones: z.string().optional().describe("Expand relations: cli,suc"),
+    },
+    async (params) => {
+      const data = await client.listMobileConnections(params);
+      return { content: [{ type: "text", text: json(data) }] };
+    }
+  );
+
+  server.tool(
+    "get_mobile_connection",
+    "Get detailed information about a specific SSMovil mobile connection.",
+    {
+      connection_id: z.string().describe("Mobile connection ID"),
+    },
+    async ({ connection_id }) => {
+      const data = await client.getMobileConnection(connection_id);
       return { content: [{ type: "text", text: json(data) }] };
     }
   );

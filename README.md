@@ -10,13 +10,13 @@ Query clients, invoices, collections, internet connections, support tickets, net
 - **Invoices** — List and inspect invoices with items, consolidated data, and PDF print links
 - **Collections** — Browse payment collections with user and date filters
 - **Internet Connections** — Query connections by technology, plan, status; view change logs
-- **TV & Phone** — List and inspect TV and telephony service connections
+- **TV, Phone & Mobile** — List and inspect TV, telephony, and SSMovil mobile service connections
 - **Support Tickets** — List tickets, view details, photos, movement logs, checkin/checkout, chat attachments, and browse categories/subcategories/statuses
 - **Network** — Check network status, outages, nodes, subnodes, VLANs, SVLANs, and plans
 - **FTTx Infrastructure** — Navigate the fiber hierarchy: backbones, PONs, NAP boxes, ports, seals, and trace elements upward
 - **Auxiliary Data** — Localities, branches, users, warehouses, payment methods, client categories, ticket metadata, and reference data
 
-## Available Tools (27)
+## Available Tools (29)
 
 ### Clients
 | Tool | Description |
@@ -24,7 +24,7 @@ Query clients, invoices, collections, internet connections, support tickets, net
 | `search_clients` | Search clients with text, date, tax status, and cut-off filters |
 | `get_client` | Get client details, change log, or payment commitment check |
 | `get_clients_summary` | Quick summary of total and active client counts |
-| `get_client_services` | Get client invoices, collections, tickets, or additionals |
+| `get_client_services` | Get client invoices, collections, tickets, additionals, or mobile connections (SSMovil) |
 | `list_clients_log` | List change history logs across all clients with date filters |
 
 ### Invoices & Collections
@@ -45,6 +45,8 @@ Query clients, invoices, collections, internet connections, support tickets, net
 | `get_tv_connection` | Get details of a specific TV connection |
 | `list_phone_connections` | List all phone/telephony connections |
 | `get_phone_connection` | Get details of a specific phone connection |
+| `list_mobile_connections` | List all SSMovil mobile connections with optional filters |
+| `get_mobile_connection` | Get details of a specific SSMovil mobile connection |
 
 ### Support Tickets
 | Tool | Description |
