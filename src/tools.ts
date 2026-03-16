@@ -10,8 +10,22 @@ import { ISPKeeperClient } from "./api-client.js";
 
 const client = new ISPKeeperClient();
 
+const HALLUCINATION_WARNING =
+  "CRITICAL: This tool returns REAL business data from ISPKeeper. " +
+  "If the tool call fails or is unavailable, you MUST tell the user you could not retrieve the data. " +
+  "NEVER fabricate, guess, or invent client names, IDs, balances, addresses, or any other data. " +
+  "Only present data that appears in the tool response below.";
+
+const NO_FABRICATE = " ⚠️ NEVER fabricate data if this tool fails — report the error to the user instead.";
+
 function json(data: unknown): string {
-  return JSON.stringify(data, null, 2);
+  const envelope = {
+    _source: "ISPKeeper API — live data",
+    _retrieved_at: new Date().toISOString(),
+    _warning: HALLUCINATION_WARNING,
+    data,
+  };
+  return JSON.stringify(envelope, null, 2);
 }
 
 export function registerTools(server: McpServer): void {
@@ -21,7 +35,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "search_clients",
-    "Search and list ISPKeeper clients with filters. Supports text search, date range, tax status, and more.",
+    "Search and list ISPKeeper clients with filters. Supports text search, date range, tax status, and more." + NO_FABRICATE,
     {
       q: z.string().optional().describe("Text search (name, address, etc.)"),
       ident: z.string().optional().describe("ID document (DNI/INE/RFC/NIF)"),
@@ -42,7 +56,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_client",
-    "Get detailed information about a specific client. Use include to get change log or payment commitment. Use relaciones to expand connections (coninter,contv,contel for internet/TV/phone).",
+    "Get detailed information about a specific client. Use include to get change log or payment commitment. Use relaciones to expand connections (coninter,contv,contel for internet/TV/phone)." + NO_FABRICATE,
     {
       client_id: z.string().describe("Client ID"),
       include: z.enum(["detail", "log", "payment_commitment"]).optional()
@@ -68,7 +82,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_clients_summary",
-    "Get a quick summary of total and active client counts.",
+    "Get a quick summary of total and active client counts." + NO_FABRICATE,
     {},
     async () => {
       const data = await client.getClientsSummary();
@@ -78,7 +92,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_client_services",
-    "Get services for a specific client: invoices, collections, tickets, or additionals. For internet/TV/phone connections, use get_client with relaciones=coninter,contv,contel instead.",
+    "Get services for a specific client: invoices, collections, tickets, or additionals. For internet/TV/phone connections, use get_client with relaciones=coninter,contv,contel instead." + NO_FABRICATE,
     {
       client_id: z.string().describe("Client ID"),
       service: z.enum([
@@ -107,7 +121,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "list_clients_log",
-    "List change history logs across all clients. Returns database record snapshots before modifications with timestamps and users.",
+    "List change history logs across all clients. Returns database record snapshots before modifications with timestamps and users." + NO_FABRICATE,
     {
       page: z.number().optional().describe("Page number"),
       per_page: z.number().optional().describe("Results per page (default 50)"),
@@ -126,7 +140,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "list_invoices",
-    "List invoices with filters by date, type, point of sale. Types: FA,FB,FX (invoices), CA,CB,CX (credit notes), DA,DB,DX (debit notes).",
+    "List invoices with filters by date, type, point of sale. Types: FA,FB,FX (invoices), CA,CB,CX (credit notes), DA,DB,DX (debit notes)." + NO_FABRICATE,
     {
       page: z.number().optional().describe("Page number"),
       per_page: z.number().optional().describe("Results per page (default 50)"),
@@ -144,7 +158,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_invoice",
-    "Get detailed information about a specific invoice, including items, consolidated data, or PDF print link.",
+    "Get detailed information about a specific invoice, including items, consolidated data, or PDF print link." + NO_FABRICATE,
     {
       invoice_id: z.string().describe("Invoice ID"),
       include: z.enum(["detail", "items", "consolidated", "print_link"]).optional()
@@ -176,7 +190,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "list_collections",
-    "List payment collections with filters by date and user.",
+    "List payment collections with filters by date and user." + NO_FABRICATE,
     {
       page: z.number().optional().describe("Page number"),
       per_page: z.number().optional().describe("Results per page (default 50)"),
@@ -193,7 +207,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_collection",
-    "Get details of a specific collection/payment, optionally with consolidated data.",
+    "Get details of a specific collection/payment, optionally with consolidated data." + NO_FABRICATE,
     {
       collection_id: z.string().describe("Collection ID"),
       consolidated: z.boolean().optional().describe("Include consolidated data instead of basic detail"),
@@ -212,7 +226,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "list_internet_connections",
-    "List internet service connections with filters. Technologies: R=Radio, T=Torre, O=ONU, H=HFC, S=Switch, P=PPPoE, D=DHCP.",
+    "List internet service connections with filters. Technologies: R=Radio, T=Torre, O=ONU, H=HFC, S=Switch, P=PPPoE, D=DHCP." + NO_FABRICATE,
     {
       q: z.string().optional().describe("Text search"),
       page: z.number().optional().describe("Page number"),
@@ -233,7 +247,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_internet_connection",
-    "Get detailed information about a specific internet connection, or its change log.",
+    "Get detailed information about a specific internet connection, or its change log." + NO_FABRICATE,
     {
       connection_id: z.string().describe("Internet connection ID"),
       include: z.enum(["detail", "log"]).optional()
@@ -249,7 +263,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "list_internet_connections_log",
-    "List change history logs across all internet connections with date filters.",
+    "List change history logs across all internet connections with date filters." + NO_FABRICATE,
     {
       page: z.number().optional().describe("Page number"),
       per_page: z.number().optional().describe("Results per page (default 50)"),
@@ -268,7 +282,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "list_tv_connections",
-    "List TV service connections with filters by client, date, and status.",
+    "List TV service connections with filters by client, date, and status." + NO_FABRICATE,
     {
       page: z.number().optional().describe("Page number"),
       per_page: z.number().optional().describe("Results per page (default 50)"),
@@ -287,7 +301,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_tv_connection",
-    "Get detailed information about a specific TV connection.",
+    "Get detailed information about a specific TV connection." + NO_FABRICATE,
     {
       connection_id: z.string().describe("TV connection ID"),
     },
@@ -299,7 +313,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "list_phone_connections",
-    "List phone/telephony service connections (includes SSMovil mobile). Filter by client, date, cut-off status. Plans with telefonia_plan_movil=Y are mobile/SSMovil.",
+    "List phone/telephony service connections (includes SSMovil mobile). Filter by client, date, cut-off status. Plans with telefonia_plan_movil=Y are mobile/SSMovil." + NO_FABRICATE,
     {
       page: z.number().optional().describe("Page number"),
       per_page: z.number().optional().describe("Results per page (default 50)"),
@@ -318,7 +332,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_phone_connection",
-    "Get detailed information about a specific phone/telephony connection (includes SSMovil mobile).",
+    "Get detailed information about a specific phone/telephony connection (includes SSMovil mobile)." + NO_FABRICATE,
     {
       connection_id: z.string().describe("Phone connection ID"),
     },
@@ -334,7 +348,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "list_tickets",
-    "List support tickets with filters by date, category, and status.",
+    "List support tickets with filters by date, category, and status." + NO_FABRICATE,
     {
       page: z.number().optional().describe("Page number"),
       per_page: z.number().optional().describe("Results per page (default 50)"),
@@ -352,7 +366,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_ticket",
-    "Get detailed information about a support ticket, optionally with photos, movement log, checkin/checkout, or chat attachments.",
+    "Get detailed information about a support ticket, optionally with photos, movement log, checkin/checkout, or chat attachments." + NO_FABRICATE,
     {
       ticket_id: z.string().describe("Ticket ID"),
       include: z.enum(["detail", "photos", "log", "checkin", "chat_attachments"]).optional()
@@ -383,7 +397,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "list_tickets_log",
-    "List ticket activity logs across all tickets. Returns movement/change history with timestamps and users.",
+    "List ticket activity logs across all tickets. Returns movement/change history with timestamps and users." + NO_FABRICATE,
     {
       page: z.number().optional().describe("Page number"),
       per_page: z.number().optional().describe("Results per page (default 50)"),
@@ -400,7 +414,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_network_status",
-    "Get current network status, optionally filtered by outage date range.",
+    "Get current network status, optionally filtered by outage date range." + NO_FABRICATE,
     {
       fechaDesdeCaida: z.string().optional().describe("Outage from date"),
       fechaHastaCaida: z.string().optional().describe("Outage until date"),
@@ -413,7 +427,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "list_plans",
-    "List available internet plans, with optional filters for deleted or discontinued plans.",
+    "List available internet plans, with optional filters for deleted or discontinued plans." + NO_FABRICATE,
     {
       q: z.string().optional().describe("Text search"),
       borrado: z.enum(["Y", "N"]).optional().describe("Include deleted plans"),
@@ -431,7 +445,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "list_fttx_infrastructure",
-    "Query FTTx fiber infrastructure: backbones, PONs, NAP boxes, ports, and seals. Use resource_type to select what to list. Use parent_id with resource_type to drill down the hierarchy (backbone→PONs→boxes→ports).",
+    "Query FTTx fiber infrastructure: backbones, PONs, NAP boxes, ports, and seals. Use resource_type to select what to list. Use parent_id with resource_type to drill down the hierarchy (backbone→PONs→boxes→ports)." + NO_FABRICATE,
     {
       resource_type: z.enum(["backbones", "pons", "boxes", "ports", "seals"])
         .describe("Type of FTTx resource to list"),
@@ -469,7 +483,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_fttx_trace",
-    "Trace a FTTx element upward through the hierarchy. Get the full chain: port→box→PON→backbone.",
+    "Trace a FTTx element upward through the hierarchy. Get the full chain: port→box→PON→backbone." + NO_FABRICATE,
     {
       resource_type: z.enum(["port", "box", "pon"])
         .describe("Type of resource to trace from"),
@@ -498,7 +512,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "list_auxiliary_data",
-    "List auxiliary/reference data: localities, branches, users, warehouses, categories, payment methods, ticket metadata, and more.",
+    "List auxiliary/reference data: localities, branches, users, warehouses, categories, payment methods, ticket metadata, and more." + NO_FABRICATE,
     {
       resource: z.enum([
         "localities", "branches", "users", "warehouses",
@@ -564,7 +578,7 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_network_element",
-    "Get details of a specific element by type and ID: node, subnode, VLAN, SVLAN, user, branch, warehouse, additional, payment method, or ticket category/subcategory/status.",
+    "Get details of a specific element by type and ID: node, subnode, VLAN, SVLAN, user, branch, warehouse, additional, payment method, or ticket category/subcategory/status." + NO_FABRICATE,
     {
       element_type: z.enum([
         "node", "subnode", "vlan", "svlan",
