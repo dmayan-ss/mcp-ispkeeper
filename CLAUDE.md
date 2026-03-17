@@ -34,6 +34,10 @@ The pattern for adding a new tool: add API method to `ISPKeeperClient`, then reg
 - Target: Node 18+
 - `scripts/bundle.js` creates a `.mcpb` zip containing `manifest.json`, `package.json`, and `dist/index.js` using a custom zero-dependency zip implementation
 
+## Platform Compatibility
+
+Runs on Windows, Linux, and WSL without changes. No native dependencies — pure JS (Node 18+ with native `fetch`), stdio transport, and ESM. The shebang (`#!/usr/bin/env node`) enables direct execution on Unix-like systems and is harmlessly ignored on Windows.
+
 ## API Notes
 
 - API paths use Spanish names (e.g., `/clientes`, `/facturas`, `/cobranzas`, `/conexiones-internet`)

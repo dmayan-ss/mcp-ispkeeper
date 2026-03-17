@@ -75,14 +75,31 @@ Query clients, invoices, collections, internet connections, support tickets, net
 
 ### Claude Desktop / Claude Code (MCP config)
 
-Add to your MCP settings:
+Add to your MCP settings, adjusting the path for your platform:
 
+**Windows**
 ```json
 {
   "mcpServers": {
     "ispkeeper": {
       "command": "node",
-      "args": ["path/to/mcp-ispkeeper/dist/index.js"],
+      "args": ["C:\\path\\to\\mcp-ispkeeper\\dist\\index.js"],
+      "env": {
+        "ISPKEEPER_API_KEY": "your-api-key",
+        "ISPKEEPER_BASE_URL": "https://api.anatod.ar"
+      }
+    }
+  }
+}
+```
+
+**Linux / WSL**
+```json
+{
+  "mcpServers": {
+    "ispkeeper": {
+      "command": "node",
+      "args": ["/path/to/mcp-ispkeeper/dist/index.js"],
       "env": {
         "ISPKEEPER_API_KEY": "your-api-key",
         "ISPKEEPER_BASE_URL": "https://api.anatod.ar"
@@ -100,6 +117,15 @@ cd mcp-ispkeeper
 npm install
 npm run build
 ```
+
+## Platform Compatibility
+
+Works on **Windows**, **Linux**, and **WSL** with no changes. Requirements:
+
+- Node.js >= 18 (uses native `fetch`)
+- No native/compiled dependencies — pure JavaScript
+- Stdio transport works across all platforms
+- The shebang (`#!/usr/bin/env node`) allows direct execution on Unix-like systems and is ignored on Windows
 
 ## Configuration
 
