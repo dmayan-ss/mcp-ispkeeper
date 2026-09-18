@@ -18,7 +18,45 @@ Query clients, invoices, collections, internet connections, support tickets, net
 - **FTTx Infrastructure** — Navigate the fiber hierarchy: backbones, PONs, NAP boxes, ports, seals, and trace elements upward
 - **Auxiliary Data** — Localities, branches, users, warehouses, payment methods, client categories, ticket metadata, and reference data
 
-## Available Tools (32)
+## Available Tools (34)
+
+### Ticket integration
+| Tool | Description |
+|------|-------------|
+| `search_ticket_clients` | Find candidates by client ID, DNI/CUIT, name, or mobile, returning only identity/contact fields |
+| `list_client_connections` | List a selected client's Internet, TV, or phone connections, with verified ownership and minimal fields |
+
+Name and mobile both use the API's general `q` search, preserving the entered
+text. Results are candidates and may match another field. DNI/CUIT uses `ident`;
+client ID uses `/cliente/{cliente_id}`. Choose the intended client explicitly.
+These tools do not create or update tickets or services.
+
+```json
+{"search_by":"mobile","query":"+54 9 2902 123456","page":1,"per_page":20}
+```
+
+Use the returned `cliente_id` in the next call:
+
+```json
+{"client_id":"42","service_type":"internet","page":1,"per_page":20}
+```
+
+`service_type` accepts `internet`, `television`, and `telefonia`. Connection
+results include `connection_id`, `client_id`, and `service_type`; store the
+service type along with its ID because different services have separate ID
+spaces. Follow `has_more` using the next `page`. `upstream_total` is the API's
+candidate count. List searches allow 1–50 results per page. An unknown direct
+client ID is an API error, not an invented or empty client record.
+
+Only these two tools use minimal field projections. The general-purpose tools
+return full API data, with password fields masked (see `ISPKEEPER_SHOW_SECRETS`).
+All HTTP calls have a 20-second timeout, an 8 MiB response limit, disabled
+redirects, and sanitized errors (`ISPKeeper API HTTP <status>`).
+
+Contract sources reviewed on 2026-09-18:
+[API introduction](https://docs.anatod.com/reference/inicio),
+[client search](https://docs.anatod.com/reference/obtener-clientes), and
+[client Internet connections](https://docs.anatod.com/reference/obtener-conexiones-de-internet-de-cliente).
 
 ### Clients
 | Tool | Description |
@@ -106,6 +144,7 @@ Password fields come back as `"[REDACTED]"` (see `ISPKEEPER_SHOW_SECRETS`). That
 
 | Goal | Call |
 |---|---|
+| Pick a client and one of its services for a ticket | `search_ticket_clients` then `list_client_connections` (minimal fields, ownership checked) |
 | Find a client by DNI/CUIT | `search_clients` with `ident` (can return several records) |
 | Find a client by name, address or phone number | `search_clients` with `q` |
 | Include deleted clients | `search_clients` with `borrado: "1"` (default `"0"` hides them) |
@@ -196,11 +235,22 @@ Works on **Windows**, **Linux**, and **WSL** with no changes. Requirements:
 ## Development
 
 ```bash
+npm test         # Isolated contract and projection tests (no credentials)
+npm run typecheck # TypeScript validation
 npm run dev      # Run with tsx (hot reload)
 npm run build    # Build with esbuild
 npm run bundle   # Build + create .mcpb package
 ISPKEEPER_API_KEY=... npm run smoke   # Live smoke test of every tool (GET-only)
 ```
+
+### Optional live validation
+
+After building, run `ISPKEEPER_API_KEY_FILE=/path/to/key node tests/live-ticket-tools.mjs`.
+The key file must contain only the API key. This explicitly performs read-only
+requests against the real API and requires a dataset with an Internet connection
+and a recent client with a mobile number. It prints check outcomes, not record
+values. Upstream may retain normal access logs. The live check is separate from
+`npm test` and never runs automatically.
 
 ## License
 

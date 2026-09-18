@@ -42,19 +42,39 @@ export class ISPKeeperClient {
       }
     }
 
-    const response = await fetch(url.toString(), {
-      method: "GET",
-      headers: this.headers,
-    });
-
-    if (!response.ok) {
-      const body = await response.text().catch(() => "");
-      throw new Error(
-        `ISPKeeper API error: ${response.status} ${response.statusText}${body ? ` - ${body}` : ""}`
-      );
+    try {
+      const response = await fetch(url.toString(), {
+        method: "GET", headers: this.headers,
+        redirect: "error", signal: AbortSignal.timeout(20000),
+      });
+      if (!response.ok) {
+        await response.body?.cancel();
+        throw new Error(`ISPKeeper API HTTP ${response.status}`);
+      }
+      if (!response.body) throw new Error("ISPKeeper API returned an empty response");
+      const reader = response.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let size = 0;
+      while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+        size += value.length;
+        if (size > 8 * 1024 * 1024) {
+          await reader.cancel();
+          throw new Error("ISPKeeper API response exceeds 8 MiB; use a smaller page");
+        }
+        chunks.push(value);
+      }
+      try {
+        return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+      } catch {
+        throw new Error("ISPKeeper API returned invalid JSON");
+      }
+    } catch (error) {
+      if (error instanceof Error && /^ISPKeeper API (HTTP [0-9]{3}|returned (an empty response|invalid JSON)|response exceeds 8 MiB; use a smaller page)$/.test(error.message))
+        throw error;
+      throw new Error("ISPKeeper API request failed or timed out");
     }
-
-    return response.json();
   }
 
   // ─── Clients ────────────────────────────────────────────
@@ -93,6 +113,14 @@ export class ISPKeeperClient {
     });
   }
 
+  // Client-scoped service routes (paginated).
+  async getClientConnections(clientId: string, service: "internet" | "television" | "telefonia",
+    params?: {page?: number; per_page?: number}) {
+    if (!/^-?[1-9][0-9]*$/.test(clientId) || !["internet", "television", "telefonia"].includes(service))
+      throw new Error("Invalid client or service type");
+    return this.get(`/cliente/${clientId}/conexiones/${service}`, params);
+  }
+
   async getClientsSummary() {
     return this.get("/clientes/resumen");
   }
@@ -113,17 +141,6 @@ export class ISPKeeperClient {
 
   async getClientAdditionals(clienteId: string) {
     return this.get(`/cliente/${clienteId}/adicionales`);
-  }
-
-  async getClientConnections(
-    clienteId: string,
-    service: "internet" | "television" | "telefonia",
-    params?: { page?: number; per_page?: number },
-  ) {
-    return this.get(`/cliente/${clienteId}/conexiones/${service}`, {
-      page: params?.page,
-      per_page: params?.per_page,
-    });
   }
 
   async getClientFiles(clienteId: string) {

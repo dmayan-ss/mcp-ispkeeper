@@ -35,6 +35,8 @@ Query params:
 - `contribuyente` (string, default: "C,R") - Tax type (C: final consumer, R: registered taxpayer, M: simplified regime, E: exempt)
 - `q` (string) - Text search
 - `ident` (string) - ID document (DNI/INE/RFC/NIF)
+- `cat` (number) - Client category ID
+- Name and mobile lookup both use the general `q` parameter.
 
 #### GET /api/cliente/{cliente_id}
 Get a client.
