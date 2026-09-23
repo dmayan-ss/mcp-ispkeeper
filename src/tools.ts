@@ -6,6 +6,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { registerTicketTools } from "./ticket-tools.js";
 import { ISPKeeperClient } from "./api-client.js";
 
 const client = new ISPKeeperClient();
@@ -43,6 +44,7 @@ function json(data: unknown): string {
 }
 
 export function registerTools(server: McpServer): void {
+  registerTicketTools(server, client);
   // ──────────────────────────────────────────────
   // CLIENTS
   // ──────────────────────────────────────────────
@@ -60,7 +62,7 @@ export function registerTools(server: McpServer): void {
       altaDesde: z.string().optional().describe("Created from date (YYYY-MM-DD)"),
       altaHasta: z.string().optional().describe("Created until date (YYYY-MM-DD)"),
       contribuyente: z.string().optional().describe("Tax type: C=final consumer, R=registered taxpayer, M=simplified regime, E=exempt. Comma-separated."),
-      cat: z.number().optional().describe("Client category ID (see list_auxiliary_data client_categories)"),
+      cat: z.number().int().positive().optional().describe("Client category ID (see list_auxiliary_data client_categories)"),
       relaciones: z.string().optional().describe("Expand relations: cat,subz,locfi,locre,loc,medp,tkcli,email,adic,contel,contv,coninter,caja,consus,intco"),
     },
     async (params) => {

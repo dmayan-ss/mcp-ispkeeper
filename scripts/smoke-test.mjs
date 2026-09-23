@@ -48,10 +48,14 @@ const idOf = (row, key) => (row ? String(row[key]) : undefined);
 const clients = await call("search_clients", { per_page: 1 });
 const clientId = idOf(first(clients), "cliente_id");
 await call("get_clients_summary");
+await call("search_ticket_clients", { search_by: "name", query: "a", per_page: 1 });
 await call("list_clients_log", { per_page: 1 });
 if (clientId) {
   for (const include of ["detail", "log", "payment_commitment", "payment_commitment_history", "files"])
     await call("get_client", { client_id: clientId, include });
+  await call("search_ticket_clients", { search_by: "id", query: clientId });
+  for (const service_type of ["internet", "television", "telefonia"])
+    await call("list_client_connections", { client_id: clientId, service_type });
   for (const service of ["invoices", "collections", "tickets", "additionals",
     "internet_connections", "tv_connections", "phone_connections", "subscriptions"])
     await call("get_client_services", { client_id: clientId, service, per_page: 1 });

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Read-only MCP server for ISPKeeper (ISP management software). Exposes 32 tools that query clients, invoices, collections, internet/TV/phone connections, subscriptions, suppliers, support tickets, network status, FTTx infrastructure, and auxiliary data via the ISPKeeper REST API. All requests are GET-only.
+Read-only MCP server for ISPKeeper (ISP management software). Exposes 34 tools that query clients, invoices, collections, internet/TV/phone connections, subscriptions, suppliers, support tickets, network status, FTTx infrastructure, and auxiliary data via the ISPKeeper REST API. All requests are GET-only.
 
 ## Commands
 
@@ -16,15 +16,22 @@ npm run bundle   # Build + create .mcpb package for Claude App installation
 npm run smoke    # Live smoke test: every tool against the real API (needs ISPKEEPER_API_KEY; GET-only)
 ```
 
-No unit-test framework or linter is configured. `scripts/smoke-test.mjs` spawns `dist/index.js` over stdio, discovers real IDs from list calls and calls every tool, exiting 1 on any failure. Run it after `npm run build` whenever a path, parameter or tool changes, and extend it when adding a tool (it prints tools it did not exercise). Type-check with `npx tsc --noEmit`.
+No linter is configured. Three checks:
+
+- `npm test` — Node test-runner contract/projection tests for `ticket-tools.ts` (offline).
+- `npm run typecheck` — TypeScript validation.
+- `npm run smoke` — `scripts/smoke-test.mjs` spawns `dist/index.js` over stdio, discovers real IDs from list calls and calls every tool, exiting 1 on any failure. Run it after `npm run build` whenever a path, parameter or tool changes, and extend it when adding a tool (it prints tools it did not exercise).
 
 ## Architecture
 
-Three source files in `src/`:
+Source files in `src/`:
 
 - **`index.ts`** — Entry point. Creates `McpServer`, calls `registerTools()`, connects via stdio transport. Top-level `await`.
 - **`api-client.ts`** — `ISPKeeperClient` class with ~90 methods, each mapping to one ISPKeeper REST endpoint (`GET /api/...`). Reads `ISPKEEPER_API_KEY` and `ISPKEEPER_BASE_URL` from env at module load. All methods go through a single `get()` method that builds URLs, sets headers (`x-api-key`, `X-Requested-With`, `Accept`), and handles errors.
-- **`tools.ts`** — `registerTools()` registers all 32 MCP tools using `server.tool()`. Every response goes through `json()`, which wraps it in an anti-hallucination envelope and masks secrets. Uses Zod for input schemas. Several tools use an `include` or `resource_type` enum parameter to multiplex related API calls into a single tool (e.g., `get_client` can fetch detail, log, or payment commitment).
+- **`tools.ts`** — `registerTools()` registers 32 of the 34 MCP tools (the other two come from `ticket-tools.ts`) using `server.tool()`. Every response goes through `json()`, which wraps it in an anti-hallucination envelope and masks secrets. Uses Zod for input schemas. Several tools use an `include` or `resource_type` enum parameter to multiplex related API calls into a single tool (e.g., `get_client` can fetch detail, log, or payment commitment).
+
+`ticket-tools.ts` adds two minimal-field tools for selecting a client and its
+connections in a ticket workflow; it validates service ownership.
 
 The pattern for adding a new tool: add API method to `ISPKeeperClient`, then register the tool in `registerTools()` with Zod schema.
 
