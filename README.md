@@ -88,6 +88,47 @@ Query clients, invoices, collections, internet connections, support tickets, net
 | `list_auxiliary_data` | List localities, branches, users, warehouses, payment methods, nodes, subnodes, VLANs, SVLANs, ticket categories/subcategories/statuses, supplier tax categories, and more |
 | `get_network_element` | Get details of a node, subnode, VLAN, SVLAN, user, branch, warehouse, additional, payment method, or ticket category/subcategory/status |
 
+## Usage Guide for Agents
+
+### Response format
+
+Every tool returns one JSON text block wrapped in an envelope:
+
+```json
+{ "_source": "ISPKeeper API — live data", "_retrieved_at": "<ISO timestamp>", "_warning": "...", "data": <API response> }
+```
+
+List endpoints return a Laravel paginator in `data`: the records are in `data.data`, next to `current_page`, `last_page`, `per_page`, `total` and `next_page_url`. Read `total` before concluding that a search found nothing or everything, and walk `page` while `current_page < last_page`. Detail endpoints return the record object directly. A few return a bare array, where `[]` means nothing found (client files, ticket photos/checkin/materials).
+
+Password fields come back as `"[REDACTED]"` (see `ISPKEEPER_SHOW_SECRETS`). That is intentional, not missing data.
+
+### Common tasks
+
+| Goal | Call |
+|---|---|
+| Find a client by DNI/CUIT | `search_clients` with `ident` (can return several records) |
+| Find a client by name, address or phone number | `search_clients` with `q` |
+| Include deleted clients | `search_clients` with `borrado: "1"` (default `"0"` hides them) |
+| A client's internet / TV / phone services | `get_client_services` with `service: internet_connections \| tv_connections \| phone_connections` |
+| A client's subscriptions | `get_client_services` with `service: subscriptions` (filters `list_subscriptions` by client; the API has no client-scoped route) |
+| A client's billing history | `get_client_services` with `invoices` or `collections` |
+| SSMovil line status, consumption, bonuses | `get_phone_connection` with `include: "imowi"` (live query to the Imowi platform; returns `{ok, data}`) |
+| Chat messages and files of a ticket | `get_ticket` with `include: "chat_attachments"` |
+| NAP box / PON / backbone of an internet connection | `get_internet_connection` → `conexion_boca_ftth` is the FTTx port ID → `get_fttx_trace` with `resource_type: "port"` returns `{puerto, caja, pon, backbone}`. Alternatively `list_internet_connections` with `relaciones: "boc"` nests the port and its box |
+| Ports of a NAP box / boxes of a PON | `list_fttx_infrastructure` with `parent_id` |
+| Network nodes | `list_auxiliary_data` with `resource: "nodes"`. A node in ISPKeeper is a MikroTik router (`mikrotik_*` fields) |
+
+### Gotchas
+
+- **Drill-down shape:** `list_fttx_infrastructure` with `parent_id` returns the *parent* object with its children nested (`pon` under a backbone, `caja` under a PON, `puerto` under a box), not a paginator. `q`, `page` and `per_page` are ignored in that mode.
+- **FTTx lists are large:** thousands of boxes and tens of thousands of ports. Use `q` or `parent_id`. The tool defaults to `per_page: 50`; the raw API would return 1000.
+- **`tecnologia` codes are instance-specific:** the docs list R,T,O,H,S,P,D, but a given instance may use others (e.g. H, S, Q, U) and a documented code can match nothing. Look at `conexion_tipo` on existing records first.
+- **Deleted flags differ per resource:** clients use `borrado: "1" | "0"`, most other resources `"Y" | "N"`, nodes `1 | 0`. `list_auxiliary_data` hides this behind `include_deleted: true | false`.
+- **ID parameters are strings** (`client_id: "2"`); numeric filters such as `cat`, `suc` or `cliente` on `list_subscriptions` are numbers.
+- **Relations:** `relaciones` takes comma-separated codes that expand related records in the same call (e.g. `get_client` with `relaciones: "coninter,contv,contel,consus"`). Codes per resource are in each tool's parameter description and in `ispkeeper-api-spec.md`.
+- **Dates** are `YYYY-MM-DD`. `list_invoices` defaults to types `FA,FX` unless `tipo` is set.
+- **SSMovil** mobile lines are phone connections with an ICCID; the API has no separate mobile service.
+
 ## Installation
 
 ### Claude Desktop / Claude Code (MCP config)
@@ -158,6 +199,7 @@ Works on **Windows**, **Linux**, and **WSL** with no changes. Requirements:
 npm run dev      # Run with tsx (hot reload)
 npm run build    # Build with esbuild
 npm run bundle   # Build + create .mcpb package
+ISPKEEPER_API_KEY=... npm run smoke   # Live smoke test of every tool (GET-only)
 ```
 
 ## License
