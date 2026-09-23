@@ -10,21 +10,23 @@ Query clients, invoices, collections, internet connections, support tickets, net
 - **Invoices** — List and inspect invoices with items, consolidated data, and PDF print links
 - **Collections** — Browse payment collections with user and date filters
 - **Internet Connections** — Query connections by technology, plan, status; view change logs
-- **TV & Phone** — List and inspect TV and telephony service connections
+- **TV & Phone** — List and inspect TV and telephony service connections, DirecTV Go data, and live SSMovil line data from Imowi
+- **Subscriptions** — Subscription services (e.g. alarm monitoring) and their plan/category catalog
+- **Suppliers** — Suppliers, supplier invoices, and their tax lines
 - **Support Tickets** — List tickets, view details, photos, movement logs, checkin/checkout, chat attachments, and browse categories/subcategories/statuses
 - **Network** — Check network status, outages, nodes, subnodes, VLANs, SVLANs, and plans
 - **FTTx Infrastructure** — Navigate the fiber hierarchy: backbones, PONs, NAP boxes, ports, seals, and trace elements upward
 - **Auxiliary Data** — Localities, branches, users, warehouses, payment methods, client categories, ticket metadata, and reference data
 
-## Available Tools (27)
+## Available Tools (32)
 
 ### Clients
 | Tool | Description |
 |------|-------------|
 | `search_clients` | Search clients with text, date, tax status, and cut-off filters |
-| `get_client` | Get client details, change log, or payment commitment check |
+| `get_client` | Get client details, change log, payment commitment (current or history), or attached files |
 | `get_clients_summary` | Quick summary of total and active client counts |
-| `get_client_services` | Get client invoices, collections, tickets, or additionals |
+| `get_client_services` | Get client invoices, collections, tickets, additionals, internet/TV/phone connections, or subscriptions |
 | `list_clients_log` | List change history logs across all clients with date filters |
 
 ### Invoices & Collections
@@ -42,16 +44,23 @@ Query clients, invoices, collections, internet connections, support tickets, net
 | `get_internet_connection` | Get internet connection details or change log |
 | `list_internet_connections_log` | List change logs across all internet connections |
 | `list_tv_connections` | List all TV service connections |
-| `get_tv_connection` | Get details of a specific TV connection |
+| `get_tv_connection` | Get details of a specific TV connection, or its DirecTV Go data |
 | `list_phone_connections` | List all phone/telephony connections |
-| `get_phone_connection` | Get details of a specific phone connection |
+| `get_phone_connection` | Get details of a specific phone connection, or live SSMovil line data from Imowi |
+
+### Subscriptions
+| Tool | Description |
+|------|-------------|
+| `list_subscriptions` | List subscriptions filtered by client, plan, subcategory, date, active status |
+| `get_subscription` | Get details of a specific subscription |
+| `list_subscription_catalog` | List subscription plans, categories, or subcategories |
 
 ### Support Tickets
 | Tool | Description |
 |------|-------------|
 | `list_tickets` | List tickets filtered by date, category, status |
-| `get_ticket` | Get ticket detail, photos, movement log, checkin/checkout, or chat attachments |
-| `list_tickets_log` | List ticket activity logs across all tickets |
+| `get_ticket` | Get ticket detail, photos, movement log, checkin/checkout, materials, or chat messages and files |
+| `list_tickets_log` | List ticket activity logs across all tickets with date filters |
 
 ### Network & Plans
 | Tool | Description |
@@ -62,13 +71,21 @@ Query clients, invoices, collections, internet connections, support tickets, net
 ### FTTx Infrastructure
 | Tool | Description |
 |------|-------------|
-| `list_fttx_infrastructure` | Query FTTx resources (backbones, PONs, boxes, ports, seals) with drill-down |
+| `list_fttx_infrastructure` | Query FTTx resources (backbones, PONs, boxes, ports, seals) with drill-down, text search, and paging |
 | `get_fttx_trace` | Trace a FTTx element upward: port → box → PON → backbone |
+
+### Suppliers
+| Tool | Description |
+|------|-------------|
+| `list_suppliers` | List suppliers filtered by text, locality, VAT type |
+| `get_supplier` | Get details of a specific supplier |
+| `list_supplier_invoices` | List supplier invoices filtered by date, point of sale, voided/deleted |
+| `get_supplier_invoice` | Get a supplier invoice or its tax lines |
 
 ### Auxiliary & Reference Data
 | Tool | Description |
 |------|-------------|
-| `list_auxiliary_data` | List localities, branches, users, warehouses, payment methods, ticket categories/subcategories/statuses, and more |
+| `list_auxiliary_data` | List localities, branches, users, warehouses, payment methods, nodes, subnodes, VLANs, SVLANs, ticket categories/subcategories/statuses, supplier tax categories, and more |
 | `get_network_element` | Get details of a node, subnode, VLAN, SVLAN, user, branch, warehouse, additional, payment method, or ticket category/subcategory/status |
 
 ## Installation
@@ -133,6 +150,7 @@ Works on **Windows**, **Linux**, and **WSL** with no changes. Requirements:
 |---------------------|----------|---------|-------------|
 | `ISPKEEPER_API_KEY` | Yes | — | ISPKeeper API key (`x-api-key` header) |
 | `ISPKEEPER_BASE_URL` | No | `https://api.anatod.ar` | Base URL of your ISPKeeper instance |
+| `ISPKEEPER_SHOW_SECRETS` | No | — | Set to `1` to return password fields unmasked. By default any field ending in `pass`, `password`, `secret` or `token` (router, PPPoE, RADIUS, Wi-Fi passwords) is replaced with `[REDACTED]` |
 
 ## Development
 

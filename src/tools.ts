@@ -1,7 +1,7 @@
 /**
  * MCP tool definitions for ISPKeeper.
  *
- * Paths verified against official docs at anatod.readme.io (2026-03-03).
+ * Paths verified against official docs at docs.anatod.com and the live API (2026-09-23).
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -18,12 +18,26 @@ const HALLUCINATION_WARNING =
 
 const NO_FABRICATE = " ⚠️ NEVER fabricate data if this tool fails — report the error to the user instead.";
 
+// Router, PPPoE, RADIUS and Wi-Fi passwords come back in plain text (e.g. mikrotik_pass,
+// subnodo_pass, conexion_pppoe_pass). Mask them unless ISPKEEPER_SHOW_SECRETS=1.
+const SHOW_SECRETS = process.env.ISPKEEPER_SHOW_SECRETS === "1";
+const SECRET_KEY = /(pass(word)?|secret|token)$/i;
+
+function redact(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redact);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) =>
+      [k, SECRET_KEY.test(k) && v !== null && v !== "" ? "[REDACTED]" : redact(v)]));
+  }
+  return value;
+}
+
 function json(data: unknown): string {
   const envelope = {
     _source: "ISPKeeper API — live data",
     _retrieved_at: new Date().toISOString(),
     _warning: HALLUCINATION_WARNING,
-    data,
+    data: SHOW_SECRETS ? data : redact(data),
   };
   return JSON.stringify(envelope, null, 2);
 }
@@ -46,7 +60,8 @@ export function registerTools(server: McpServer): void {
       altaDesde: z.string().optional().describe("Created from date (YYYY-MM-DD)"),
       altaHasta: z.string().optional().describe("Created until date (YYYY-MM-DD)"),
       contribuyente: z.string().optional().describe("Tax type: C=final consumer, R=registered taxpayer, M=simplified regime, E=exempt. Comma-separated."),
-      relaciones: z.string().optional().describe("Expand relations: cat,subz,locfi,locre,loc,medp,tkcli,email,adic,contel,contv,coninter,intco"),
+      cat: z.number().optional().describe("Client category ID (see list_auxiliary_data client_categories)"),
+      relaciones: z.string().optional().describe("Expand relations: cat,subz,locfi,locre,loc,medp,tkcli,email,adic,contel,contv,coninter,caja,consus,intco"),
     },
     async (params) => {
       const data = await client.listClients(params);
@@ -56,12 +71,12 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_client",
-    "Get detailed information about a specific client. Use include to get change log or payment commitment. Use relaciones to expand connections (coninter,contv,contel for internet/TV/phone)." + NO_FABRICATE,
+    "Get detailed information about a specific client. Use include to get change log, payment commitments, or attached files. Use relaciones to expand connections (coninter,contv,contel,consus for internet/TV/phone/subscriptions)." + NO_FABRICATE,
     {
       client_id: z.string().describe("Client ID"),
-      include: z.enum(["detail", "log", "payment_commitment"]).optional()
-        .describe("What to retrieve: detail (default), log (change history), or payment_commitment (check active commitment)"),
-      relaciones: z.string().optional().describe("Expand relations (only for detail): cat,subz,locfi,locre,loc,medp,tkcli,email,adic,contel,contv,coninter,intco"),
+      include: z.enum(["detail", "log", "payment_commitment", "payment_commitment_history", "files"]).optional()
+        .describe("What to retrieve: detail (default), log (change history), payment_commitment (check active commitment), payment_commitment_history (all commitments), or files (attached files)"),
+      relaciones: z.string().optional().describe("Expand relations (only for detail): cat,subz,locfi,locre,loc,medp,tkcli,email,adic,contel,contv,coninter,caja,consus,intco"),
     },
     async ({ client_id, include, relaciones }) => {
       let data: unknown;
@@ -71,6 +86,12 @@ export function registerTools(server: McpServer): void {
           break;
         case "payment_commitment":
           data = await client.checkPaymentCommitment(client_id);
+          break;
+        case "payment_commitment_history":
+          data = await client.listPaymentCommitments(client_id);
+          break;
+        case "files":
+          data = await client.getClientFiles(client_id);
           break;
         default:
           data = await client.getClient(client_id, relaciones);
@@ -92,14 +113,17 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_client_services",
-    "Get services for a specific client: invoices, collections, tickets, or additionals. For internet/TV/phone connections, use get_client with relaciones=coninter,contv,contel instead." + NO_FABRICATE,
+    "Get services for a specific client: invoices, collections, tickets, additionals, internet/TV/phone connections, or subscriptions." + NO_FABRICATE,
     {
       client_id: z.string().describe("Client ID"),
       service: z.enum([
         "invoices", "collections", "tickets", "additionals",
+        "internet_connections", "tv_connections", "phone_connections", "subscriptions",
       ]).describe("Type of service/data to retrieve"),
+      page: z.number().optional().describe("Page number (connections and subscriptions only)"),
+      per_page: z.number().optional().describe("Results per page (connections and subscriptions only)"),
     },
-    async ({ client_id, service }) => {
+    async ({ client_id, service, page, per_page }) => {
       let data: unknown;
       switch (service) {
         case "invoices":
@@ -113,6 +137,18 @@ export function registerTools(server: McpServer): void {
           break;
         case "additionals":
           data = await client.getClientAdditionals(client_id);
+          break;
+        case "internet_connections":
+          data = await client.getClientConnections(client_id, "internet", { page, per_page });
+          break;
+        case "tv_connections":
+          data = await client.getClientConnections(client_id, "television", { page, per_page });
+          break;
+        case "phone_connections":
+          data = await client.getClientConnections(client_id, "telefonia", { page, per_page });
+          break;
+        case "subscriptions":
+          data = await client.listSubscriptions({ cliente: Number(client_id), page, per_page });
           break;
       }
       return { content: [{ type: "text", text: json(data) }] };
@@ -235,6 +271,7 @@ export function registerTools(server: McpServer): void {
       plan: z.string().optional().describe("Plan ID"),
       cortado: z.enum(["Y", "N"]).optional().describe("Filter cut-off connections"),
       cliente: z.string().optional().describe("Client ID"),
+      suc: z.number().optional().describe("Branch ID (see list_auxiliary_data branches)"),
       altaDesde: z.string().optional().describe("Created from date (YYYY-MM-DD)"),
       altaHasta: z.string().optional().describe("Created until date (YYYY-MM-DD)"),
       relaciones: z.string().optional().describe("Expand relations: cli,boc,ip,ippub,pre,rou,sto,subz,suc,mac,vlan,svlan,loc,mik,pl,plp,caja,extra"),
@@ -301,12 +338,16 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_tv_connection",
-    "Get detailed information about a specific TV connection." + NO_FABRICATE,
+    "Get detailed information about a specific TV connection, or its DirecTV Go account data." + NO_FABRICATE,
     {
       connection_id: z.string().describe("TV connection ID"),
+      include: z.enum(["detail", "dgo"]).optional()
+        .describe("What to retrieve: detail (default) or dgo (DirecTV Go account data)"),
     },
-    async ({ connection_id }) => {
-      const data = await client.getTVConnection(connection_id);
+    async ({ connection_id, include }) => {
+      const data = include === "dgo"
+        ? await client.getTVConnectionDGO(connection_id)
+        : await client.getTVConnection(connection_id);
       return { content: [{ type: "text", text: json(data) }] };
     }
   );
@@ -332,12 +373,80 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_phone_connection",
-    "Get detailed information about a specific phone/telephony connection (includes SSMovil mobile)." + NO_FABRICATE,
+    "Get detailed information about a specific phone/telephony connection (includes SSMovil mobile), or live line data from the Imowi mobile platform." + NO_FABRICATE,
     {
       connection_id: z.string().describe("Phone connection ID"),
+      include: z.enum(["detail", "imowi"]).optional()
+        .describe("What to retrieve: detail (default) or imowi (live SSMovil line data from Imowi: number, ICCID, holder, status)"),
     },
-    async ({ connection_id }) => {
-      const data = await client.getPhoneConnection(connection_id);
+    async ({ connection_id, include }) => {
+      const data = include === "imowi"
+        ? await client.getPhoneConnectionImowi(connection_id)
+        : await client.getPhoneConnection(connection_id);
+      return { content: [{ type: "text", text: json(data) }] };
+    }
+  );
+
+  // ──────────────────────────────────────────────
+  // SUBSCRIPTIONS
+  // ──────────────────────────────────────────────
+
+  server.tool(
+    "list_subscriptions",
+    "List subscription services (e.g. SS Seguridad alarm monitoring) with filters by client, plan, subcategory, date, and active status." + NO_FABRICATE,
+    {
+      q: z.string().optional().describe("Text search"),
+      page: z.number().optional().describe("Page number"),
+      per_page: z.number().optional().describe("Results per page (default 50)"),
+      cliente: z.number().optional().describe("Filter by client ID"),
+      plan: z.number().optional().describe("Filter by subscription plan ID"),
+      subcat: z.number().optional().describe("Filter by subscription subcategory ID"),
+      activa: z.enum(["Y", "N"]).optional().describe("Filter active subscriptions"),
+      altaDesde: z.string().optional().describe("Created from date (YYYY-MM-DD)"),
+      altaHasta: z.string().optional().describe("Created until date (YYYY-MM-DD)"),
+      relaciones: z.string().optional().describe("Expand relations: cli,pl,subcat,cat,subz,loc (default pl,subcat,cat,cli)"),
+    },
+    async (params) => {
+      const data = await client.listSubscriptions(params);
+      return { content: [{ type: "text", text: json(data) }] };
+    }
+  );
+
+  server.tool(
+    "get_subscription",
+    "Get detailed information about a specific subscription service." + NO_FABRICATE,
+    {
+      subscription_id: z.string().describe("Subscription ID"),
+    },
+    async ({ subscription_id }) => {
+      const data = await client.getSubscription(subscription_id);
+      return { content: [{ type: "text", text: json(data) }] };
+    }
+  );
+
+  server.tool(
+    "list_subscription_catalog",
+    "List the subscription catalog: plans, categories, or subcategories." + NO_FABRICATE,
+    {
+      resource: z.enum(["plans", "categories", "subcategories"]).describe("Catalog resource to list"),
+      borrado: z.enum(["Y", "N"]).optional().describe("Filter deleted records"),
+      parent_id: z.number().optional()
+        .describe("For plans: subcategory ID. For subcategories: category ID."),
+      q: z.string().optional().describe("Text search (plans only)"),
+    },
+    async ({ resource, borrado, parent_id, q }) => {
+      let data: unknown;
+      switch (resource) {
+        case "plans":
+          data = await client.listSubscriptionPlans({ borrado, subcat: parent_id, q });
+          break;
+        case "categories":
+          data = await client.listSubscriptionCategories({ borrado });
+          break;
+        case "subcategories":
+          data = await client.listSubscriptionSubcategories({ borrado, categoria: parent_id });
+          break;
+      }
       return { content: [{ type: "text", text: json(data) }] };
     }
   );
@@ -366,13 +475,14 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "get_ticket",
-    "Get detailed information about a support ticket, optionally with photos, movement log, checkin/checkout, or chat attachments." + NO_FABRICATE,
+    "Get detailed information about a support ticket, optionally with photos, movement log, checkin/checkout, materials used, or chat messages and files." + NO_FABRICATE,
     {
       ticket_id: z.string().describe("Ticket ID"),
-      include: z.enum(["detail", "photos", "log", "checkin", "chat_attachments"]).optional()
-        .describe("What to retrieve: detail (default), photos, log (movement history), checkin (field visit checkin/checkout), or chat_attachments (chat messages and files)"),
+      include: z.enum(["detail", "photos", "log", "checkin", "materials", "chat_attachments"]).optional()
+        .describe("What to retrieve: detail (default), photos, log (movement history), checkin (field visit checkin/checkout), materials (stock used), or chat_attachments (ticket detail with chat messages and files)"),
+      relaciones: z.string().optional().describe("Expand relations (only for detail): usu,tec,tecaco,sol,motb,suc,subn,pl,cli,clitmp,cat,subcat,asig,stat,chat,archivos,checkin"),
     },
-    async ({ ticket_id, include }) => {
+    async ({ ticket_id, include, relaciones }) => {
       let data: unknown;
       switch (include) {
         case "photos":
@@ -384,11 +494,14 @@ export function registerTools(server: McpServer): void {
         case "checkin":
           data = await client.getTicketCheckin(ticket_id);
           break;
+        case "materials":
+          data = await client.getTicketMaterials(ticket_id);
+          break;
         case "chat_attachments":
-          data = await client.getTicketChatAttachments(ticket_id);
+          data = await client.getTicket(ticket_id, "chat,archivos");
           break;
         default:
-          data = await client.getTicket(ticket_id);
+          data = await client.getTicket(ticket_id, relaciones);
           break;
       }
       return { content: [{ type: "text", text: json(data) }] };
@@ -401,6 +514,8 @@ export function registerTools(server: McpServer): void {
     {
       page: z.number().optional().describe("Page number"),
       per_page: z.number().optional().describe("Results per page (default 50)"),
+      logDesde: z.string().optional().describe("Log from date (YYYY-MM-DD)"),
+      logHasta: z.string().optional().describe("Log until date (YYYY-MM-DD)"),
     },
     async (params) => {
       const data = await client.listTicketsLog(params);
@@ -445,36 +560,41 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "list_fttx_infrastructure",
-    "Query FTTx fiber infrastructure: backbones, PONs, NAP boxes, ports, and seals. Use resource_type to select what to list. Use parent_id with resource_type to drill down the hierarchy (backbone→PONs→boxes→ports)." + NO_FABRICATE,
+    "Query FTTx fiber infrastructure: backbones, PONs, NAP boxes, ports, and seals. Use resource_type to select what to list. Use parent_id to drill down the hierarchy (backbone→PONs→boxes→ports) and q for text search." + NO_FABRICATE,
     {
       resource_type: z.enum(["backbones", "pons", "boxes", "ports", "seals"])
         .describe("Type of FTTx resource to list"),
       parent_id: z.string().optional()
-        .describe("Parent resource ID to drill down: backbone ID for PONs, PON ID for boxes, box ID for ports"),
+        .describe("Parent resource ID to drill down: backbone ID for PONs, PON ID for boxes, box ID for ports. Returns the parent with its children nested."),
+      q: z.string().optional().describe("Text search (ignored when parent_id is set)"),
+      libre: z.enum(["Y", "N"]).optional().describe("Seals only: Y = not linked to a connection, N = linked"),
+      page: z.number().optional().describe("Page number (ignored when parent_id is set)"),
+      per_page: z.number().optional().describe("Results per page (default 50; ignored when parent_id is set)"),
     },
-    async ({ resource_type, parent_id }) => {
+    async ({ resource_type, parent_id, q, libre, page, per_page }) => {
+      const paging = { page, per_page: per_page ?? 50 };
       let data: unknown;
       switch (resource_type) {
         case "backbones":
-          data = await client.listBackbones();
+          data = await client.listBackbones({ q, ...paging });
           break;
         case "pons":
           data = parent_id
             ? await client.getBackbonePons(parent_id)
-            : await client.listPons();
+            : await client.listPons({ q, ...paging });
           break;
         case "boxes":
           data = parent_id
             ? await client.getPonBoxes(parent_id)
-            : await client.listBoxes();
+            : await client.listBoxes({ q, ...paging });
           break;
         case "ports":
           data = parent_id
             ? await client.getBoxPorts(parent_id)
-            : await client.listPorts();
+            : await client.listPorts({ q, ...paging });
           break;
         case "seals":
-          data = await client.listSeals();
+          data = await client.listSeals({ libre, q, ...paging });
           break;
       }
       return { content: [{ type: "text", text: json(data) }] };
@@ -507,6 +627,74 @@ export function registerTools(server: McpServer): void {
   );
 
   // ──────────────────────────────────────────────
+  // SUPPLIERS
+  // ──────────────────────────────────────────────
+
+  server.tool(
+    "list_suppliers",
+    "List suppliers (proveedores) with filters by text, locality, VAT type, and deleted status." + NO_FABRICATE,
+    {
+      q: z.string().optional().describe("Text search"),
+      borrado: z.enum(["Y", "N"]).optional().describe("Filter deleted suppliers (API default N)"),
+      loc: z.number().optional().describe("Locality ID"),
+      iva: z.string().optional().describe("VAT type code"),
+      relaciones: z.string().optional().describe("Expand relations: loc,cat"),
+    },
+    async (params) => {
+      const data = await client.listSuppliers(params);
+      return { content: [{ type: "text", text: json(data) }] };
+    }
+  );
+
+  server.tool(
+    "get_supplier",
+    "Get detailed information about a specific supplier." + NO_FABRICATE,
+    {
+      supplier_id: z.string().describe("Supplier ID"),
+      relaciones: z.string().optional().describe("Expand relations: loc,cat"),
+    },
+    async ({ supplier_id, relaciones }) => {
+      const data = await client.getSupplier(supplier_id, relaciones);
+      return { content: [{ type: "text", text: json(data) }] };
+    }
+  );
+
+  server.tool(
+    "list_supplier_invoices",
+    "List supplier invoices (facturas de proveedores) with filters by date, point of sale, voided and deleted status." + NO_FABRICATE,
+    {
+      page: z.number().optional().describe("Page number"),
+      per_page: z.number().optional().describe("Results per page (default 50)"),
+      fechadesde: z.string().optional().describe("Invoice date from (YYYY-MM-DD)"),
+      fechahasta: z.string().optional().describe("Invoice date until (YYYY-MM-DD)"),
+      puntoventa: z.number().optional().describe("Point of sale number"),
+      anulado: z.enum(["Y", "N"]).optional().describe("Filter voided invoices (API default N)"),
+      borrado: z.enum(["Y", "N"]).optional().describe("Filter deleted invoices (API default N)"),
+      relaciones: z.string().optional().describe("Expand relations: prov (default)"),
+    },
+    async (params) => {
+      const data = await client.listSupplierInvoices(params);
+      return { content: [{ type: "text", text: json(data) }] };
+    }
+  );
+
+  server.tool(
+    "get_supplier_invoice",
+    "Get a specific supplier invoice, or its tax lines." + NO_FABRICATE,
+    {
+      invoice_id: z.string().describe("Supplier invoice ID"),
+      include: z.enum(["detail", "taxes"]).optional()
+        .describe("What to retrieve: detail (default) or taxes (tax lines of the invoice)"),
+    },
+    async ({ invoice_id, include }) => {
+      const data = include === "taxes"
+        ? await client.listSupplierInvoiceTaxes(invoice_id)
+        : await client.getSupplierInvoice(invoice_id);
+      return { content: [{ type: "text", text: json(data) }] };
+    }
+  );
+
+  // ──────────────────────────────────────────────
   // AUXILIARY DATA
   // ──────────────────────────────────────────────
 
@@ -517,13 +705,17 @@ export function registerTools(server: McpServer): void {
       resource: z.enum([
         "localities", "branches", "users", "warehouses",
         "client_categories", "additionals", "payment_methods",
-        "nodes",
+        "nodes", "subnodes", "vlans", "svlans",
         "ticket_categories", "ticket_subcategories", "ticket_statuses",
         "extra_connection_categories",
         "how_did_you_find_us", "previous_providers", "service_cancellation_categories",
+        "supplier_tax_categories",
       ]).describe("Type of auxiliary data to list"),
+      include_deleted: z.boolean().optional()
+        .describe("nodes/subnodes/vlans/svlans only: true = deleted records, false = active records, omitted = API default"),
     },
-    async ({ resource }) => {
+    async ({ resource, include_deleted }) => {
+      const yn = include_deleted === undefined ? undefined : include_deleted ? "Y" as const : "N" as const;
       let data: unknown;
       switch (resource) {
         case "localities":
@@ -548,7 +740,16 @@ export function registerTools(server: McpServer): void {
           data = await client.listPaymentMethods();
           break;
         case "nodes":
-          data = await client.listNodes();
+          data = await client.listNodes({ borrado: include_deleted === undefined ? undefined : include_deleted ? 1 : 0 });
+          break;
+        case "subnodes":
+          data = await client.listSubnodes({ borrado: yn });
+          break;
+        case "vlans":
+          data = await client.listVlans({ borrado: yn });
+          break;
+        case "svlans":
+          data = await client.listSvlans({ borrado: yn });
           break;
         case "ticket_categories":
           data = await client.listTicketCategories();
@@ -570,6 +771,9 @@ export function registerTools(server: McpServer): void {
           break;
         case "service_cancellation_categories":
           data = await client.listServiceCancellationCategories();
+          break;
+        case "supplier_tax_categories":
+          data = await client.listSupplierTaxCategories();
           break;
       }
       return { content: [{ type: "text", text: json(data) }] };

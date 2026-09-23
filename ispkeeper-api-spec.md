@@ -68,14 +68,20 @@ Additionals for a client.
 #### GET /api/cliente/{cliente_id}/cobranzas
 Collections for a client.
 
-#### GET /api/cliente/{cliente_id}/conexiones-internet
-Internet services for a client.
+#### GET /api/cliente/{cliente_id}/conexiones/internet
+Internet services for a client (paginated).
 
-#### GET /api/cliente/{cliente_id}/conexiones-telefonia
-Phone services for a client.
+#### GET /api/cliente/{cliente_id}/conexiones/telefonia
+Phone services for a client (paginated).
 
-#### GET /api/cliente/{cliente_id}/conexiones-television
-TV services for a client.
+#### GET /api/cliente/{cliente_id}/conexiones/television
+TV services for a client (paginated).
+
+#### GET /api/cliente/{cliente_id}/archivos
+Files attached to a client.
+
+#### GET /api/cliente/{cliente_id}/compromiso-pago/listado
+Payment commitment history for a client.
 
 #### GET /api/cliente/{cliente_id}/tickets
 Tickets for a client.
@@ -201,38 +207,42 @@ Available relations:
 
 ### FTTx INFRASTRUCTURE
 
-#### GET /api/backbones
-FTTx Backbone - List
+Resource names are **singular** (`/backbone`, `/pon`, `/caja`, `/puerto`); the plural forms return 404 "Ruta no soportada".
 
-#### GET /api/backbone/{id}/pons
-FTTx Backbone - List PONs
+#### GET /api/backbone
+FTTx Backbone - List. Query: `q`
 
-#### GET /api/pons
-FTTx PON - List
+#### GET /api/backbone/{id}/pon
+FTTx Backbone - List PONs (backbone object with nested `pon` array)
 
-#### GET /api/pon/{id}/cajas
-FTTx PON - List NAP Boxes
+#### GET /api/pon
+FTTx PON - List. Query: `backbone`, `q`
 
-#### GET /api/pon/{id}/backbone
+#### GET /api/pon/{id}/caja
+FTTx PON - List NAP Boxes (PON object with nested boxes)
+
+#### GET /api/pon/{id}/mapeo
 FTTx PON - Get Backbone
 
-#### GET /api/cajas
-FTTx NAP Box - List
+#### GET /api/caja
+FTTx NAP Box - List. Query: `pon`, `q`
 
-#### GET /api/caja/{id}/puertos
-FTTx NAP Box - List Ports
+#### GET /api/caja/{id}/puerto
+FTTx NAP Box - List Ports (box object with nested ports)
 
-#### GET /api/caja/{id}/pon-backbone
+#### GET /api/caja/{id}/mapeo
 FTTx NAP Box - Get PON and Backbone
 
-#### GET /api/puertos
-FTTx Port - List
+#### GET /api/puerto
+FTTx Port - List. Query: `caja`, `q`
 
-#### GET /api/puerto/{id}/caja-pon-backbone
+#### GET /api/puerto/{id}/mapeo
 FTTx Port - Get NAP Box, PON, and Backbone
 
 #### GET /api/precintos
-Seals - List
+Seals - List. Query: `libre` (Y|N, default Y), `q`
+
+All FTTx lists are paginated (`page`, `per_page`); without `per_page` the API returns up to 1000 rows.
 
 ---
 
@@ -245,26 +255,26 @@ Query params:
 - `discontinuo` (enum: "Y"|"N")
 - `q` (string) - Text search
 
-#### GET /api/nodos
-Nodes - List
+#### GET /api/nodo
+Nodes - List. Query: `borrado` (1|0)
 
 #### GET /api/nodo/{id}
 Get node
 
-#### GET /api/subnodos
-Subnodes - List
+#### GET /api/subnodo
+Subnodes - List. Query: `borrado` (Y|N)
 
 #### GET /api/subnodo/{id}
 Get subnode
 
-#### GET /api/vlans
-VLANs - List
+#### GET /api/vlan
+VLANs - List. Query: `borrado` (Y|N)
 
 #### GET /api/vlan/{id}
 Get VLAN
 
-#### GET /api/svlans
-SVLANs - List
+#### GET /api/svlan
+SVLANs - List. Query: `borrado` (Y|N)
 
 #### GET /api/svlan/{id}
 Get SVLAN
@@ -285,6 +295,9 @@ Extra connection categories - List
 #### GET /api/conexion-television/{id}
 Get TV service
 
+#### GET /api/conexion-television/dgo/{id}
+DirecTV Go account data for a TV service
+
 #### GET /api/conexiones-television
 List TV services
 
@@ -294,6 +307,9 @@ List TV services
 
 #### GET /api/conexion-telefonia/{id}
 Get phone service
+
+#### GET /api/conexion-telefonia/{id}/imowi
+Live line data from the Imowi mobile platform (SSMovil): number, ICCID, holder, status
 
 #### GET /api/conexiones-telefonia
 List phone services
@@ -353,8 +369,59 @@ Previous providers - List
 #### GET /api/cliente-tickets/categorias-bajas
 Service cancellation categories - List
 
-#### GET /api/ticket/{ticket_id}/chat-adjuntos
-Ticket chat attachments
+#### GET /api/ticket/materiales/{ticket_id}
+Materials (stock) used in a ticket
+
+Chat messages and files have no dedicated endpoint (`/ticket/{id}/chat-adjuntos` returns 404): request `/api/ticket/{id}?relaciones=chat,archivos`.
+
+---
+
+### SUBSCRIPTION SERVICES
+
+Relations: `cli`, `pl`, `subcat`, `cat`, `subz`, `loc`. There is no client-scoped route; filter the list by `cliente`.
+
+#### GET /api/conexiones-suscripcion
+List subscriptions. Query: `relaciones`, `page`, `per_page`, `altaDesde`, `altaHasta`, `activa` (Y|N), `cliente`, `plan`, `subcat`, `q`
+
+#### GET /api/conexion-suscripcion/{id}
+Get subscription
+
+#### GET /api/suscripciones-planes
+Subscription plans. Query: `borrado`, `subcat`, `precioDesde`, `precioHasta`, `nombre`, `q`
+
+#### GET /api/suscripciones-categorias
+Subscription categories. Query: `borrado`, `nombre`
+
+#### GET /api/suscripciones-subcategorias
+Subscription subcategories. Query: `borrado`, `categoria`, `nombre`
+
+---
+
+### SUPPLIERS
+
+#### GET /api/proveedores
+List suppliers. Query: `relaciones` (loc,cat), `borrado`, `loc`, `iva`, `q`
+
+#### GET /api/proveedor/{id}
+Get supplier. Query: `relaciones`
+
+#### GET /api/facturas-proveedores
+List supplier invoices. Query: `relaciones` (prov), `borrado`, `anulado`, `puntoventa`, `fechadesde`, `fechahasta`
+
+#### GET /api/factura-proveedor/{id}
+Get supplier invoice. Query: `relaciones`
+
+#### GET /api/facturas-proveedores-impuestos
+Supplier invoice tax lines. Query: `borrado`, `factura`
+
+#### GET /api/facturas-proveedores-impuestos-categorias
+Supplier tax categories. Query: `borrado`
+
+---
+
+### NOT IMPLEMENTED (read-only GETs intentionally left out)
+
+- `GET /api/ping-mikrotik/{id}` - triggers a ping from the node's MikroTik; an action, not a data read.
 
 ---
 
@@ -418,7 +485,7 @@ List payment methods
 ## NOTES FOR MCP SERVER
 
 1. **Only implement GET operations** (read-only)
-2. Exact URL paths may vary slightly from inferred patterns - verify against the real API
+2. Paths verified against docs.anatod.com and the live API on 2026-09-23. `/facturas`, `/cobranzas`, `/tickets`, `/ticket/{id}` and `/cliente/{id}` are no longer in the published docs but still work
 3. All endpoints require `x-api-key` and `X-Requested-With: XMLHttpRequest` headers
 4. Pagination is consistent: `page` + `per_page`
 5. The `relaciones` param expands related data in each response
