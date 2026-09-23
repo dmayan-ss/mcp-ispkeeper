@@ -2,7 +2,7 @@
  * HTTP client for ISPKeeper API.
  * All requests are read-only (GET).
  *
- * Paths verified against official docs at anatod.readme.io (2026-03-03).
+ * Paths verified against official docs at docs.anatod.com and the live API (2026-09-23).
  */
 
 const API_KEY = process.env.ISPKEEPER_API_KEY ?? "";
@@ -11,6 +11,8 @@ const BASE_URL = (process.env.ISPKEEPER_BASE_URL ?? "https://api.anatod.ar").rep
 interface RequestParams {
   [key: string]: string | number | undefined;
 }
+
+type Paging = { page?: number; per_page?: number };
 
 export class ISPKeeperClient {
   private headers: Record<string, string>;
@@ -68,6 +70,7 @@ export class ISPKeeperClient {
     contribuyente?: string;
     q?: string;
     ident?: string;
+    cat?: number;
   }) {
     return this.get("/clientes", {
       relaciones: params?.relaciones ?? "cat,subz",
@@ -80,6 +83,7 @@ export class ISPKeeperClient {
       contribuyente: params?.contribuyente,
       q: params?.q,
       ident: params?.ident,
+      cat: params?.cat,
     });
   }
 
@@ -111,6 +115,21 @@ export class ISPKeeperClient {
     return this.get(`/cliente/${clienteId}/adicionales`);
   }
 
+  async getClientConnections(
+    clienteId: string,
+    service: "internet" | "television" | "telefonia",
+    params?: { page?: number; per_page?: number },
+  ) {
+    return this.get(`/cliente/${clienteId}/conexiones/${service}`, {
+      page: params?.page,
+      per_page: params?.per_page,
+    });
+  }
+
+  async getClientFiles(clienteId: string) {
+    return this.get(`/cliente/${clienteId}/archivos`);
+  }
+
   async getClientLog(clienteId: string, params?: {
     page?: number;
     per_page?: number;
@@ -137,6 +156,10 @@ export class ISPKeeperClient {
 
   async checkPaymentCommitment(clienteId: string) {
     return this.get(`/cliente/${clienteId}/compromiso-pago/check`);
+  }
+
+  async listPaymentCommitments(clienteId: string) {
+    return this.get(`/cliente/${clienteId}/compromiso-pago/listado`);
   }
 
   async listClientCategories() {
@@ -228,6 +251,7 @@ export class ISPKeeperClient {
     cortado?: "Y" | "N";
     cliente?: string;
     q?: string;
+    suc?: number;
   }) {
     return this.get("/conexiones-internet", {
       relaciones: params?.relaciones ?? "cli,suc",
@@ -240,6 +264,7 @@ export class ISPKeeperClient {
       cortado: params?.cortado,
       cliente: params?.cliente,
       q: params?.q,
+      suc: params?.suc,
     });
   }
 
@@ -299,6 +324,10 @@ export class ISPKeeperClient {
     return this.get(`/conexion-television/${id}`);
   }
 
+  async getTVConnectionDGO(id: string) {
+    return this.get(`/conexion-television/dgo/${id}`);
+  }
+
   // ─── Phone Services ─────────────────────────────────────
 
   async listPhoneConnections(params?: {
@@ -327,6 +356,62 @@ export class ISPKeeperClient {
     return this.get(`/conexion-telefonia/${id}`);
   }
 
+  /** Live line data from the Imowi mobile platform (SSMovil). */
+  async getPhoneConnectionImowi(id: string) {
+    return this.get(`/conexion-telefonia/${id}/imowi`);
+  }
+
+  // ─── Subscription Services ──────────────────────────────
+
+  async listSubscriptions(params?: {
+    relaciones?: string;
+    page?: number;
+    per_page?: number;
+    altaDesde?: string;
+    altaHasta?: string;
+    activa?: "Y" | "N";
+    cliente?: number;
+    plan?: number;
+    subcat?: number;
+    q?: string;
+  }) {
+    return this.get("/conexiones-suscripcion", {
+      relaciones: params?.relaciones ?? "pl,subcat,cat,cli",
+      page: params?.page,
+      per_page: params?.per_page ?? 50,
+      altaDesde: params?.altaDesde,
+      altaHasta: params?.altaHasta,
+      activa: params?.activa,
+      cliente: params?.cliente,
+      plan: params?.plan,
+      subcat: params?.subcat,
+      q: params?.q,
+    });
+  }
+
+  async getSubscription(id: string) {
+    return this.get(`/conexion-suscripcion/${id}`);
+  }
+
+  async listSubscriptionPlans(params?: {
+    borrado?: "Y" | "N";
+    subcat?: number;
+    q?: string;
+  }) {
+    return this.get("/suscripciones-planes", params);
+  }
+
+  async listSubscriptionCategories(params?: { borrado?: "Y" | "N" }) {
+    return this.get("/suscripciones-categorias", params);
+  }
+
+  async listSubscriptionSubcategories(params?: {
+    borrado?: "Y" | "N";
+    categoria?: number;
+  }) {
+    return this.get("/suscripciones-subcategorias", params);
+  }
+
   // ─── Tickets ───────────────────────────────────────────
 
   async listTickets(params?: {
@@ -349,8 +434,8 @@ export class ISPKeeperClient {
     });
   }
 
-  async getTicket(ticketId: string) {
-    return this.get(`/ticket/${ticketId}`);
+  async getTicket(ticketId: string, relaciones?: string) {
+    return this.get(`/ticket/${ticketId}`, { relaciones });
   }
 
   async getTicketPhotos(ticketId: string) {
@@ -364,10 +449,14 @@ export class ISPKeeperClient {
   async listTicketsLog(params?: {
     page?: number;
     per_page?: number;
+    logDesde?: string;
+    logHasta?: string;
   }) {
     return this.get("/tickets-log", {
       page: params?.page,
       per_page: params?.per_page ?? 50,
+      logDesde: params?.logDesde,
+      logHasta: params?.logHasta,
     });
   }
 
@@ -375,8 +464,8 @@ export class ISPKeeperClient {
     return this.get(`/ticket/${ticketId}/checkin`);
   }
 
-  async getTicketChatAttachments(ticketId: string) {
-    return this.get(`/ticket/${ticketId}/chat-adjuntos`);
+  async getTicketMaterials(ticketId: string) {
+    return this.get(`/ticket/materiales/${ticketId}`);
   }
 
   // ─── Ticket Metadata ───────────────────────────────────
@@ -431,32 +520,32 @@ export class ISPKeeperClient {
     });
   }
 
-  async listNodes() {
-    return this.get("/nodos");
+  async listNodes(params?: { borrado?: 1 | 0 }) {
+    return this.get("/nodo", params);
   }
 
   async getNode(id: string) {
     return this.get(`/nodo/${id}`);
   }
 
-  async listSubnodes() {
-    return this.get("/subnodos");
+  async listSubnodes(params?: { borrado?: "Y" | "N" }) {
+    return this.get("/subnodo", params);
   }
 
   async getSubnode(id: string) {
     return this.get(`/subnodo/${id}`);
   }
 
-  async listVlans() {
-    return this.get("/vlans");
+  async listVlans(params?: { borrado?: "Y" | "N" }) {
+    return this.get("/vlan", params);
   }
 
   async getVlan(id: string) {
     return this.get(`/vlan/${id}`);
   }
 
-  async listSvlans() {
-    return this.get("/svlans");
+  async listSvlans(params?: { borrado?: "Y" | "N" }) {
+    return this.get("/svlan", params);
   }
 
   async getSvlan(id: string) {
@@ -465,48 +554,48 @@ export class ISPKeeperClient {
 
   // ─── FTTx Infrastructure ────────────────────────────────
 
-  async listBackbones() {
-    return this.get("/backbones");
+  async listBackbones(params?: { q?: string } & Paging) {
+    return this.get("/backbone", params);
   }
 
   async getBackbonePons(id: string) {
-    return this.get(`/backbone/${id}/pons`);
+    return this.get(`/backbone/${id}/pon`);
   }
 
-  async listPons() {
-    return this.get("/pons");
+  async listPons(params?: { backbone?: string; q?: string } & Paging) {
+    return this.get("/pon", params);
   }
 
   async getPonBoxes(id: string) {
-    return this.get(`/pon/${id}/cajas`);
+    return this.get(`/pon/${id}/caja`);
   }
 
   async getPonBackbone(id: string) {
-    return this.get(`/pon/${id}/backbone`);
+    return this.get(`/pon/${id}/mapeo`);
   }
 
-  async listBoxes() {
-    return this.get("/cajas");
+  async listBoxes(params?: { pon?: string; q?: string } & Paging) {
+    return this.get("/caja", params);
   }
 
   async getBoxPorts(id: string) {
-    return this.get(`/caja/${id}/puertos`);
+    return this.get(`/caja/${id}/puerto`);
   }
 
   async getBoxPonBackbone(id: string) {
-    return this.get(`/caja/${id}/pon-backbone`);
+    return this.get(`/caja/${id}/mapeo`);
   }
 
-  async listPorts() {
-    return this.get("/puertos");
+  async listPorts(params?: { caja?: string; q?: string } & Paging) {
+    return this.get("/puerto", params);
   }
 
   async getPortBoxPonBackbone(id: string) {
-    return this.get(`/puerto/${id}/caja-pon-backbone`);
+    return this.get(`/puerto/${id}/mapeo`);
   }
 
-  async listSeals() {
-    return this.get("/precintos");
+  async listSeals(params?: { libre?: "Y" | "N"; q?: string } & Paging) {
+    return this.get("/precintos", params);
   }
 
   // ─── Additionals ───────────────────────────────────────
@@ -559,6 +648,51 @@ export class ISPKeeperClient {
 
   async getPaymentMethod(id: string) {
     return this.get(`/medio-pago/${id}`);
+  }
+
+  // ─── Suppliers ─────────────────────────────────────────
+
+  async listSuppliers(params?: {
+    relaciones?: string;
+    borrado?: "Y" | "N";
+    loc?: number;
+    iva?: string;
+    q?: string;
+  }) {
+    return this.get("/proveedores", params);
+  }
+
+  async getSupplier(id: string, relaciones?: string) {
+    return this.get(`/proveedor/${id}`, { relaciones });
+  }
+
+  async listSupplierInvoices(params?: {
+    relaciones?: string;
+    page?: number;
+    per_page?: number;
+    borrado?: "Y" | "N";
+    anulado?: "Y" | "N";
+    puntoventa?: number;
+    fechadesde?: string;
+    fechahasta?: string;
+  }) {
+    return this.get("/facturas-proveedores", {
+      ...params,
+      relaciones: params?.relaciones ?? "prov",
+      per_page: params?.per_page ?? 50,
+    });
+  }
+
+  async getSupplierInvoice(id: string, relaciones?: string) {
+    return this.get(`/factura-proveedor/${id}`, { relaciones: relaciones ?? "prov" });
+  }
+
+  async listSupplierInvoiceTaxes(factura: string) {
+    return this.get("/facturas-proveedores-impuestos", { factura });
+  }
+
+  async listSupplierTaxCategories() {
+    return this.get("/facturas-proveedores-impuestos-categorias");
   }
 
   // ─── Reference Data ────────────────────────────────────
