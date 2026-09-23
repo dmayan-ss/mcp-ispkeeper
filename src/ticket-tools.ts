@@ -4,7 +4,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ISPKeeperClient } from './api-client.js';
 
 type Row = Record<string, unknown>;
-// ISPKeeper also uses negative client IDs (e.g. -100); zero is never valid.
+// Negative client IDs (e.g. -100) are clients imported from the system that preceded
+// ISPKeeper (confirmed by the ISPKeeper developer, 2026-09-23). Zero is never valid.
 const id = z.string().regex(/^-?[1-9][0-9]*$/, 'Expected a non-zero numeric ID');
 const page = z.number().int().positive().max(1000000).default(1);
 const perPage = z.number().int().min(1).max(50).default(20);

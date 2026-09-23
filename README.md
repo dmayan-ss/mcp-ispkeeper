@@ -163,6 +163,7 @@ Password fields come back as `"[REDACTED]"` (see `ISPKEEPER_SHOW_SECRETS`). That
 - **FTTx lists are large:** thousands of boxes and tens of thousands of ports. Use `q` or `parent_id`. The tool defaults to `per_page: 50`; the raw API would return 1000.
 - **`tecnologia` codes are instance-specific:** the docs list R,T,O,H,S,P,D, but a given instance may use others (e.g. H, S, Q, U) and a documented code can match nothing. Look at `conexion_tipo` on existing records first.
 - **Deleted flags differ per resource:** clients use `borrado: "1" | "0"`, most other resources `"Y" | "N"`, nodes `1 | 0`. `list_auxiliary_data` hides this behind `include_deleted: true | false`.
+- **Negative client IDs are real clients** (e.g. `-100`): records imported from the system that preceded ISPKeeper, about 11 years ago (confirmed by the ISPKeeper developer). The API serves them like any other client; do not treat them as test or invalid records, and never validate IDs as positive-only.
 - **ID parameters are strings** (`client_id: "2"`); numeric filters such as `cat`, `suc` or `cliente` on `list_subscriptions` are numbers.
 - **Relations:** `relaciones` takes comma-separated codes that expand related records in the same call (e.g. `get_client` with `relaciones: "coninter,contv,contel,consus"`). Codes per resource are in each tool's parameter description and in `ispkeeper-api-spec.md`.
 - **Dates** are `YYYY-MM-DD`. `list_invoices` defaults to types `FA,FX` unless `tipo` is set.
