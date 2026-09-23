@@ -262,12 +262,12 @@ export function registerTools(server: McpServer): void {
 
   server.tool(
     "list_internet_connections",
-    "List internet service connections with filters. Technologies: R=Radio, T=Torre, O=ONU, H=HFC, S=Switch, P=PPPoE, D=DHCP." + NO_FABRICATE,
+    "List internet service connections with filters. tecnologia matches the connection's conexion_tipo code. The docs list R=Radio, T=Torre, O=ONU, H=HFC, S=Switch, P=PPPoE, D=DHCP, but instances use their own set (e.g. H, S, Q, U) — check conexion_tipo on existing records before filtering." + NO_FABRICATE,
     {
       q: z.string().optional().describe("Text search"),
       page: z.number().optional().describe("Page number"),
       per_page: z.number().optional().describe("Results per page (default 50)"),
-      tecnologia: z.string().optional().describe("Technology: R,T,O,H,S,P,D"),
+      tecnologia: z.string().optional().describe("Technology code as stored in conexion_tipo (e.g. H, S, Q, U)"),
       plan: z.string().optional().describe("Plan ID"),
       cortado: z.enum(["Y", "N"]).optional().describe("Filter cut-off connections"),
       cliente: z.string().optional().describe("Client ID"),

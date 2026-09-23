@@ -13,17 +13,18 @@ npm run build    # Build with esbuild → dist/index.js (single bundled ESM file
 npm run dev      # Run with tsx (hot reload, no build needed)
 npm run start    # Run built output
 npm run bundle   # Build + create .mcpb package for Claude App installation
+npm run smoke    # Live smoke test: every tool against the real API (needs ISPKEEPER_API_KEY; GET-only)
 ```
 
-No test framework is configured. No linter is configured.
+No unit-test framework or linter is configured. `scripts/smoke-test.mjs` spawns `dist/index.js` over stdio, discovers real IDs from list calls and calls every tool, exiting 1 on any failure. Run it after `npm run build` whenever a path, parameter or tool changes, and extend it when adding a tool (it prints tools it did not exercise). Type-check with `npx tsc --noEmit`.
 
 ## Architecture
 
 Three source files in `src/`:
 
 - **`index.ts`** — Entry point. Creates `McpServer`, calls `registerTools()`, connects via stdio transport. Top-level `await`.
-- **`api-client.ts`** — `ISPKeeperClient` class with ~50 methods, each mapping to one ISPKeeper REST endpoint (`GET /api/...`). Reads `ISPKEEPER_API_KEY` and `ISPKEEPER_BASE_URL` from env at module load. All methods go through a single `get()` method that builds URLs, sets headers (`x-api-key`, `X-Requested-With`, `Accept`), and handles errors.
-- **`tools.ts`** — `registerTools()` registers all 32 MCP tools using `server.tool()`. Uses Zod for input schemas. Several tools use an `include` or `resource_type` enum parameter to multiplex related API calls into a single tool (e.g., `get_client` can fetch detail, log, or payment commitment).
+- **`api-client.ts`** — `ISPKeeperClient` class with ~90 methods, each mapping to one ISPKeeper REST endpoint (`GET /api/...`). Reads `ISPKEEPER_API_KEY` and `ISPKEEPER_BASE_URL` from env at module load. All methods go through a single `get()` method that builds URLs, sets headers (`x-api-key`, `X-Requested-With`, `Accept`), and handles errors.
+- **`tools.ts`** — `registerTools()` registers all 32 MCP tools using `server.tool()`. Every response goes through `json()`, which wraps it in an anti-hallucination envelope and masks secrets. Uses Zod for input schemas. Several tools use an `include` or `resource_type` enum parameter to multiplex related API calls into a single tool (e.g., `get_client` can fetch detail, log, or payment commitment).
 
 The pattern for adding a new tool: add API method to `ISPKeeperClient`, then register the tool in `registerTools()` with Zod schema.
 
@@ -33,6 +34,12 @@ The pattern for adding a new tool: add API method to `ISPKeeperClient`, then reg
 - esbuild bundles everything into a single `dist/index.js` with shebang
 - Target: Node 18+
 - `scripts/bundle.js` creates a `.mcpb` zip containing `manifest.json`, `package.json`, and `dist/index.js` using a custom zero-dependency zip implementation
+
+## Releases
+
+Version lives in four places that must match: `package.json`, `package-lock.json` (top-level `version` and `packages[""].version`), `manifest.json` and the `McpServer` version in `src/index.ts`. To release: bump all four, `npm run bundle`, run the smoke test, merge to `main`, tag `vX.Y.Z` and publish a GitHub release with `mcp-ispkeeper.mcpb` attached (`gh release create vX.Y.Z mcp-ispkeeper.mcpb`). `dist/` and `*.mcpb` are gitignored; the release asset is the only published build.
+
+`README.md` has a "Usage Guide for Agents" section (response envelope, pagination, common task → tool recipes, gotchas). Keep it in sync with tool behaviour; other agents rely on it.
 
 ## Platform Compatibility
 
